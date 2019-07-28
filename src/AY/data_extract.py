@@ -38,17 +38,3 @@ with open(train_data) as csvfile, open(test_data) as test_data_csv:
         data = data[::-1]
         pickle.dump(data, t_f, -1)
         print(t_data[:3])
-#
-# with open(store_data) as csvfile, open(store_states) as csvfile2:
-#     data = csv.reader(csvfile, delimiter=',')
-#     state_data = csv.reader(csvfile2, delimiter=',')
-#     with open('store_data.pickle', 'wb') as f:
-#         data = csv2dicts(data)
-#         state_data = csv2dicts(state_data)
-#         set_nan_as_string(data)
-#         for index, val in enumerate(data):
-#             state = state_data[index]
-#             val['State'] = state['State']
-#             data[index] = val
-#         pickle.dump(data, f, -1)
-#         print(data[:2])

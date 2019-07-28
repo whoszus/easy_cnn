@@ -9,7 +9,7 @@ sys.setrecursionlimit(10000)
 train_ratio = 0.9
 shuffle_data = False
 one_hot_as_input = False
-embeddings_as_input = False
+embeddings_as_input = True
 save_embeddings = True
 saved_embeddings_fname = "embeddings.pickle"  # set save_embeddings to True to create this file
 

@@ -22,10 +22,8 @@ def embed_features(X, saved_embeddings_fname):
     # f_embeddings = open("embeddings_shuffled.pickle", "rb")
     f_embeddings = open(saved_embeddings_fname, "rb")
     embeddings = pickle.load(f_embeddings)
-
     index_embedding_mapping = {1: 0, 2: 1, 4: 2, 5: 3, 6: 4, 7: 5}
     X_embedded = []
-
     (num_records, num_features) = X.shape
     for record in X:
         embedded_features = []

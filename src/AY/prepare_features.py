@@ -3,66 +3,81 @@ from datetime import datetime
 from sklearn import preprocessing
 import numpy as np
 
-with open('train_data.pickle', 'rb') as f:
-    train_data = pickle.load(f)
+batch_x = 10
+batch_y = 5
+
+with open('train_data.pickle', 'rb') as feature:
+    train_data = pickle.load(feature)
     num_records = len(train_data)
-with open('test_data.pickle', 'rb') as t_f:
-    test_data = pickle.load(t_f)
-    len_test_data = len(test_data)
+# with open('test_data.pickle', 'rb') as t_f:
+#     test_data = pickle.load(t_f)
+#     len_test_data = len(test_data)
 
 
-def feature_list(record,last_alarm_time):
-    alarm_time = datetime.strptime(record['time'], '%Y-%m-%d %H:%M:%S')
-    last_alarm_time_dt = datetime.strptime(last_alarm_time, '%Y-%m-%d %H:%M:%S')
+def feature_list(alarms, lat):
+    if lat != '':
+        alarm_time = datetime.strptime(alarms['time'], '%Y-%m-%d %H:%M:%S')
+        last_alarm_time_dt = datetime.strptime(lat, '%Y-%m-%d %H:%M:%S')
+        time = (alarm_time - last_alarm_time_dt).seconds
+    else :
+        time = 0
+    alarm_level = int(alarms['alm_level'])
+    city = int(alarms['city'])
+    dev_name = int(alarms['dev_name'])
+    dev_type = int(alarms['dev_type'])
+    return [dev_name, dev_type, city, time, alarm_level]
+
+
+# 构建label 也需要E
+def label_list(alarms, lat):
+    alarm_time = datetime.strptime(alarms['time'], '%Y-%m-%d %H:%M:%S')
+    last_alarm_time_dt = datetime.strptime(lat, '%Y-%m-%d %H:%M:%S')
     time = (alarm_time - last_alarm_time_dt).seconds
-    alarm_level = int(record['alarm_level'])
-
-
-    return [city,
-            store_index,
-            day_of_week,
-            promo,
-            year,
-            month,
-            day,
-            store_data[store_index - 1]['State']
-            ]
+    dev_name = alarms['dev_name']
+    return [dev_name, time]
 
 
 train_data_X = []
+train_data_x_tmp = []
 train_data_y = []
+train_data_y_tmp = []
+tmp = []
 last_alarm_time = ''
-
+data_index = 1
+all_data = []
 # 构建参数
 for record in train_data:
-    fl = feature_list(record, last_alarm_time)
-    train_data_X.append(fl)
+    feature = feature_list(record, last_alarm_time)
+    train_data_x_tmp.append(feature)
+    tmp.append(feature)
+    all_data.append(feature)
+    if data_index % batch_x == 0:
+        train_data_X.append(np.array(train_data_x_tmp))
+        train_data_x_tmp = []
+        last_alarm_time = ''
+    if data_index % (batch_x + batch_y) == 0:
+        train_data_y_tmp = tmp[batch_y*-1:]
+        train_data_y_tmp = np.delete(train_data_y_tmp, [2, 3, 4], axis=1)
+        train_data_y.append(train_data_y_tmp)
+        tmp =[]
     last_alarm_time = record['time']
-for record in test_data:
-    fl = feature_list(record, last_alarm_time)
-    train_data_y.append(fl)
-    last_alarm_time = record['time']
+    data_index += 1
+data_index = 0
 
-print(min(train_data_y), max(train_data_y))
-
-
-
-full_X = train_data_X
+full_X = all_data
 full_X = np.array(full_X)
-train_data_X = np.array(train_data_X)
+all_data = np.array(all_data)
 les = []
-for i in range(train_data_X.shape[1]):
+for i in range(all_data.shape[1]):
     le = preprocessing.LabelEncoder()
     le.fit(full_X[:, i])
     les.append(le)
-    train_data_X[:, i] = le.transform(train_data_X[:, i])
+    all_data[:, i] = le.transform(all_data[:, i])
 
-with open('les.pickle', 'wb') as f:
-    pickle.dump(les, f, -1)
+with open('les.pickle', 'wb') as feature:
+    pickle.dump(les, feature, -1)
 
-train_data_X = train_data_X.astype(int)
 train_data_y = np.array(train_data_y)
-
-with open('feature_train_data.pickle', 'wb') as f:
-    pickle.dump((train_data_X, train_data_y), f, -1)
+with open('feature_train_data.pickle', 'wb') as feature:
+    pickle.dump((train_data_X, train_data_y), feature, -1)
     print(train_data_X[0], train_data_y[0])
