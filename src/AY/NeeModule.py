@@ -1,6 +1,4 @@
-import pickle
 import numpy
-
 
 from keras.models import Sequential
 from keras.models import Model as KerasModel
@@ -10,7 +8,7 @@ from keras.layers.embeddings import Embedding
 from keras.callbacks import ModelCheckpoint
 
 
-class NN_with_EntityEmbedding(KerasModel):
+class NEEModules(KerasModel):
 
     def __init__(self, X_train, y_train, X_val, y_val):
         super().__init__()

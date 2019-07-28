@@ -1,6 +1,6 @@
 import pickle
-import numpy
-
+import  numpy
+from .NeeModule import NEEModules
 
 
 # 第一次进入为false
@@ -21,7 +21,7 @@ models = []
 
 
 for i in range(5):
-    models.append(NN_with_EntityEmbedding(X_train, y_train, X_val, y_val))
+    models.append(NEEModules(X_train, y_train, X_val, y_val))
 
 
 if save_embeddings:
