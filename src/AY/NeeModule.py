@@ -1,6 +1,5 @@
 import numpy
 
-from keras.models import Sequential
 from keras.models import Model as KerasModel
 from keras.layers import Input, Dense, Activation, Reshape
 from keras.layers import Concatenate
@@ -29,7 +28,7 @@ class NEEModules(KerasModel):
         # 将正整数（索引值）转换为固定尺寸的稠密向量。 例如： [[4], [20]] -> [[0.25, 0.1], [0.6, -0.2]]
         # 该层只能用作模型中的第一层。
         input_dev_name = Input(shape=(1,))
-        output_dev_name = Embedding(724, 8, name='devName_embedding')(input_dev_name)
+        output_dev_name = Embedding(724, 10, name='devName_embedding')(input_dev_name)
         output_dev_name = Reshape(target_shape=(10,))(output_dev_name)
         # city
         input_city = Input(shape=(1,))
@@ -69,6 +68,9 @@ class NEEModules(KerasModel):
         output_model = Activation('relu')(output_model)
         output_model = Dense(1)(output_model)
         output_model = Activation('sigmoid')(output_model)
+
+
+
         self.model = KerasModel(inputs=input_model, outputs=output_model)
         self.model.compile(loss='mean_absolute_error', optimizer='adam')
 

@@ -3,8 +3,8 @@ from datetime import datetime
 from sklearn import preprocessing
 import numpy as np
 
-batch_x = 100
-batch_y = 30
+batch_x = 20
+batch_y = 5
 
 with open('train_data.pickle', 'rb') as feature:
     train_data = pickle.load(feature)
