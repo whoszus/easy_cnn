@@ -12,9 +12,9 @@ class NEEModules(KerasModel):
 
     def __init__(self, X_train, y_train, X_val, y_val):
         super().__init__()
-        self.epochs = 10
+        self.epochs = 3
         self.checkpointer = ModelCheckpoint(filepath="best_model_weights.hdf5", verbose=1, save_best_only=True)
-        self.max_log_y = max(numpy.max(numpy.log(y_train)), numpy.max(numpy.log(y_val)))
+        # self.max_log_y = max(numpy.max(numpy.log(y_train)), numpy.max(numpy.log(y_val)))
         self.__build_keras_model()
         self.fit(X_train, y_train, X_val, y_val)
 
@@ -23,14 +23,20 @@ class NEEModules(KerasModel):
         return X_list
 
     def __build_keras_model(self):
-        input_store = Input(shape=(1,))
-        output_store = Embedding(1115, 10, name='store_embedding')(input_store)
-        output_store = Reshape(target_shape=(10,))(output_store)
 
-        input_dow = Input(shape=(1,))
-        output_dow = Embedding(7, 6, name='dow_embedding')(input_dow)
-        output_dow = Reshape(target_shape=(6,))(output_dow)
 
+        # 进行设备名Embedding
+        # 将正整数（索引值）转换为固定尺寸的稠密向量。 例如： [[4], [20]] -> [[0.25, 0.1], [0.6, -0.2]]
+        # 该层只能用作模型中的第一层。
+        input_dev_name = Input(shape=(1,))
+        output_dev_name = Embedding(724, 8, name='devName_embedding')(input_dev_name)
+        output_dev_name = Reshape(target_shape=(10,))(output_dev_name)
+        # city
+        input_city = Input(shape=(1,))
+        output_city = Embedding(22, 6, name='city_embedding')(input_city)
+        output_city = Reshape(target_shape=(6,))(output_city)
+
+        # 全连接层。
         input_promo = Input(shape=(1,))
         output_promo = Dense(1)(input_promo)
 
@@ -50,10 +56,10 @@ class NEEModules(KerasModel):
         output_germanstate = Embedding(12, 6, name='state_embedding')(input_germanstate)
         output_germanstate = Reshape(target_shape=(6,))(output_germanstate)
 
-        input_model = [input_store, input_dow, input_promo,
+        input_model = [input_dev_name, input_city, input_promo,
                        input_year, input_month, input_day, input_germanstate]
 
-        output_embeddings = [output_store, output_dow, output_promo,
+        output_embeddings = [output_dev_name, output_city, output_promo,
                              output_year, output_month, output_day, output_germanstate]
 
         output_model = Concatenate()(output_embeddings)

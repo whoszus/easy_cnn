@@ -4,7 +4,7 @@ from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.preprocessing import StandardScaler
-import xgboost as xgb
+# import xgboost as xgb
 from sklearn import neighbors
 from sklearn.preprocessing import Normalizer
 
@@ -22,8 +22,10 @@ def embed_features(X, saved_embeddings_fname):
     # f_embeddings = open("embeddings_shuffled.pickle", "rb")
     f_embeddings = open(saved_embeddings_fname, "rb")
     embeddings = pickle.load(f_embeddings)
+
     index_embedding_mapping = {1: 0, 2: 1, 4: 2, 5: 3, 6: 4, 7: 5}
     X_embedded = []
+
     (num_records, num_features) = X.shape
     for record in X:
         embedded_features = []
@@ -122,28 +124,28 @@ class SVM(Model):
     def guess(self, feature):
         return numpy.exp(self.clf.predict(feature))
 
-
-class XGBoost(Model):
-
-    def __init__(self, X_train, y_train, X_val, y_val):
-        super().__init__()
-        dtrain = xgb.DMatrix(X_train, label=numpy.log(y_train))
-        evallist = [(dtrain, 'train')]
-        param = {'nthread': -1,
-                 'max_depth': 7,
-                 'eta': 0.02,
-                 'silent': 1,
-                 'objective': 'reg:linear',
-                 'colsample_bytree': 0.7,
-                 'subsample': 0.7}
-        num_round = 3000
-        self.bst = xgb.train(param, dtrain, num_round, evallist)
-        print("Result on validation data: ", self.evaluate(X_val, y_val))
-
-    def guess(self, feature):
-        dtest = xgb.DMatrix(feature)
-        return numpy.exp(self.bst.predict(dtest))
-
+#
+# class XGBoost(Model):
+#
+#     def __init__(self, X_train, y_train, X_val, y_val):
+#         super().__init__()
+#         dtrain = xgb.DMatrix(X_train, label=numpy.log(y_train))
+#         evallist = [(dtrain, 'train')]
+#         param = {'nthread': -1,
+#                  'max_depth': 7,
+#                  'eta': 0.02,
+#                  'silent': 1,
+#                  'objective': 'reg:linear',
+#                  'colsample_bytree': 0.7,
+#                  'subsample': 0.7}
+#         num_round = 3000
+#         self.bst = xgb.train(param, dtrain, num_round, evallist)
+#         print("Result on validation data: ", self.evaluate(X_val, y_val))
+#
+#     def guess(self, feature):
+#         dtest = xgb.DMatrix(feature)
+#         return numpy.exp(self.bst.predict(dtest))
+#
 
 class HistricalMedian(Model):
 
