@@ -18,7 +18,9 @@ def feature_list(alarms, lat):
     if lat != '':
         alarm_time = datetime.strptime(alarms['time'], '%Y-%m-%d %H:%M:%S')
         last_alarm_time_dt = datetime.strptime(lat, '%Y-%m-%d %H:%M:%S')
-        time = (alarm_time - last_alarm_time_dt).seconds
+        time = (last_alarm_time_dt - alarm_time).seconds
+        if time > 10:
+            print(last_alarm_time,alarm_time,time)
     else :
         time = 0
     alarm_level = int(alarms['alm_level'])

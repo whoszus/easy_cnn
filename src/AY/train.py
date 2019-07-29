@@ -1,6 +1,6 @@
 import pickle
 import  numpy
-from .NeeModule import NEEModules
+from AY.NeeModule import NEEModules
 
 
 # 第一次进入为false
