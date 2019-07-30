@@ -92,12 +92,12 @@ def evaluate_models(models, X, y):
     result = numpy.sum(relative_err) / len(y)
     return result
 
-
-print("Evaluate combined models...")
-print("Training error...")
-r_train = evaluate_models(models, X_train, y_train)
-print(r_train)
-
-print("Validation error...")
-r_val = evaluate_models(models, X_val, y_val)
-print(r_val)
+#
+# print("Evaluate combined models...")
+# print("Training error...")
+# r_train = evaluate_models(models, X_train, y_train)
+# print(r_train)
+#
+# print("Validation error...")
+# r_val = evaluate_models(models, X_val, y_val)
+# print(r_val)

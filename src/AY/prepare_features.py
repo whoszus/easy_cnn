@@ -62,6 +62,8 @@ for record in train_data:
         train_data_y_tmp = np.delete(train_data_y_tmp, [2, 3, 4], axis=1)
         train_data_y.append(train_data_y_tmp)
         tmp =[]
+        train_data_y_tmp = []
+
     last_alarm_time = record['time']
     data_index += 1
 data_index = 0
