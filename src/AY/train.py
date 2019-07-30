@@ -30,7 +30,7 @@ y_data_tmp = []
 
 nee_moudle = NEEModules()
 
-for x in range(X_INIT_DATA) :
+for x in X_INIT_DATA:
     x_data_tmp.append(x)
     if data_index % batch_x == 0:
         x_train_all.append(x_data_tmp)
@@ -38,7 +38,7 @@ for x in range(X_INIT_DATA) :
     data_index +=1
 
 data_index = 1
-for y in range(Y_INIT_DATA):
+for y in Y_INIT_DATA:
     y_data_tmp.append(y)
     if data_index % batch_x == 0:
         y_train_all.append(y_data_tmp)

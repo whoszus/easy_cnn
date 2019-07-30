@@ -33,8 +33,8 @@ class NEEModules(KerasModel):
         output_dev_name = Reshape(target_shape=(50,))(output_dev_name)
         # dev_type
         input_dev_type =Input(shape=(1,))
-        output_dev_type = Embedding(724, 50, name='devType_embedding')(input_dev_type)
-        output_dev_type = Reshape(target_shape=(50,))(output_dev_type)
+        output_dev_type = Embedding(33, 17, name='devType_embedding')(input_dev_type)
+        output_dev_type = Reshape(target_shape=(17,))(output_dev_type)
         # city
         input_city = Input(shape=(1,))
         output_city = Embedding(22, 6, name='city_embedding')(input_city)
@@ -53,7 +53,7 @@ class NEEModules(KerasModel):
         output_embeddings_i = [output_dev_name, output_dev_type, output_city, output_time, output_level]
         output_embeddings = [numpy.array(output_embeddings_i)]
         # output_embeddings = tf.convert_to_tensor(output_embeddings)
-        output_model = Concatenate()(output_embeddings)
+        output_model = Concatenate()(output_embeddings_i)
         output_model = Dense(1000, kernel_initializer="uniform")(output_model)
         output_model = Activation('relu')(output_model)
         output_model = Dense(500, kernel_initializer="uniform")(output_model)
@@ -61,7 +61,7 @@ class NEEModules(KerasModel):
         output_model = Dense(1)(output_model)
         output_model = Activation('sigmoid')(output_model)
 
-        self.model = KerasModel(inputs=input_model, outputs=output_model)
+        self.model = KerasModel(inputs=input_model_i, outputs=output_model)
         self.model.compile(loss='mean_absolute_error', optimizer='adam')
 
     # def _val_for_fit(self, val):
