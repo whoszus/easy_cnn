@@ -28,7 +28,7 @@ y_data_tmp = []
 #     models.append()
 #
 
-nee_moudle = NEEModules()
+nee_moudle = NEEModules(batch_x,batch_y)
 
 for x in X_INIT_DATA:
     x_data_tmp.append(x)
