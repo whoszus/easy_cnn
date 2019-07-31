@@ -1,5 +1,4 @@
 import pandas as pd
-from urllib.request import urlretrieve
 
 
 def load_data():
@@ -29,4 +28,4 @@ if __name__ == "__main__":
     for name in data.keys():
         print(name, pd.unique(data[name]))
     print("\n", new_data.head(2))
-    new_data.to_csv("car_onehot.csv", index=False)
+    new_data.to_csv("alarm_onehot.csv", index=False)
