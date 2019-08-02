@@ -67,7 +67,6 @@ x_les = []
     ['tokyo', 'tokyo', 'paris']
 
 """
-
 for i in range(train_data_X.shape[1]):
     le = preprocessing.LabelEncoder()
     le.fit(train_data_X[:, i])
@@ -78,6 +77,9 @@ with open('x_les.pickle', 'wb') as f:
     pickle.dump(x_les, f, -1)
 
 train_data_y = np.array(train_data_y)
+
+# embedding
+
 
 #[dev_name, dev_type, city, time, alarm_level]
 train_data_y = np.delete(train_data_y, [1, 2, 4], axis=1)
