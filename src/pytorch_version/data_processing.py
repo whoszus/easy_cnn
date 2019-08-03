@@ -7,7 +7,6 @@ import numpy as np
 import torch.utils.data as Data
 from pytorch_version.NNModule import NetAY
 
-
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
 batch_x = 100
@@ -86,6 +85,31 @@ def dataEncode(train_data_X):
     return train_data_X
 
 
+# 弃用
+def data_reshape(train_data_x):
+    tmp = []
+    group_data = []
+    tmp_y = []
+    group_data_y = []
+    train_data_x = np.array(train_data_x)
+    [rows,cols] = train_data_x.shape
+    for i in range(rows):
+        tmp.append(train_data_x[i])
+        tmp_y.append(train_data_x[i])
+        if i % batch_x == 0:
+            group_data.append(tmp)
+            tmp = []
+        if i % (batch_x+batch_y) ==0 :
+            data_y = tmp_y[batch_y*-1:]
+            data_y = np.delete(data_y, [2, 3, 4], axis=1)
+            group_data_y.append(data_y)
+
+    group_data  = np.array(group_data)
+    group_data_y = np.array(group_data_y)
+    print(group_data.shape,group_data_y.shape)
+    return group_data ,group_data_y
+
+
 def caculateOutdim(input_dim):
     return 50 if input_dim > 50 else (input_dim + 1) / 2
 
@@ -94,13 +118,18 @@ if __name__ == "__main__":
     data = load_data()
     data = time_split(data)
     encode_X = dataEncode(data)
+    # encode_X ,encode_y  = data_reshape(encode_X)
     encode_X = np.array(encode_X)
+    encode_y = np.delete(encode_X,[2,3,4],axis=1)
     # for c_name in col_names:
     #     data_unique = pd.unique(encode_X[c_name])
     #     out_dim = caculateOutdim(data_unique)
-    encode_y = np.delete(encode_X, [2, 3, 4], axis=1)
     embedd_x, encode_y = embedd(encode_X, encode_y)
-    print(embedd_x.shape, encode_y.shape)
+    # with open("embedded_data.pickle", "wb")as f:
+    #     pickle.dump((embedd_x, encode_y), f, -1)
+    #
+    # print(embedd_x.shape, encode_y.shape)
+
 
     # print(encode_X.head())
     # print("\nNum of data: ", len(data), "\n")  # 1728
@@ -113,11 +142,12 @@ if __name__ == "__main__":
     print(cnn)
     optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
     loss_func = nn.CrossEntropyLoss()  # the target label is not one-hotted
-    train_loader = Data.DataLoader(dataset=embedd_x, batch_size=BATCH_SIZE)
+    train_loader = Data.DataLoader(dataset=encode_X, batch_size=BATCH_SIZE)
 
     for epoch in range(EPOCH):
         for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
-            print(type(b_x),b_x.shape)
+            print(type(b_x), b_x.shape)
+            torch.Tensor.view(b_x,(BATCH_SIZE,batch_x,5,64))
             output = cnn(b_x)  # cnn output
             # loss = loss_func(output, b_y)  # cross entropy loss
             # optimizer.zero_grad()  # clear gradients for this training step

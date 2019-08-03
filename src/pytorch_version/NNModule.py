@@ -35,7 +35,7 @@ class ResidualBlock(nn.Module):
 class NetAY(nn.Module):
     def __init__(self, batch_x=100, batch_y=80):
         super(NetAY, self).__init__()
-        self.layer1 = self.make_layer(batch_x, 128, n_res=3)
+        self.layer1 = self.make_layer(128, 128, n_res=3)
         self.layer2 = self.make_layer(128, 256, n_res=5)
         self.layer3 = self.make_layer(256, 128, n_res=3)
 
