@@ -1,3 +1,6 @@
+#
+# todo 1. 需要修改为先各自embedding 之后合并tensor ！
+
 import pandas as pd
 from sklearn import preprocessing
 import pickle
@@ -9,28 +12,27 @@ from pytorch_version.NNModule import NetAY
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
-batch_x = 100
-batch_y = 80
+batch_x = 10
+batch_y = 5
 LR = 0.001
 EPOCH = 3
-BATCH_SIZE = batch_x
-train_rate = 0.7
+BATCH_SIZE = 5
+load_pickle_data = False
+
+# 声明为全局变量
+embedding = nn.Embedding(800, 64)
 
 
-def load_data():
-    data = pd.read_csv("data_1.csv", names=col_names, encoding='utf-8')
-    # data ['time'] = data['time'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S'))
+def load_csv_data(file):
+    data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data['time'] = pd.to_datetime(data['time'])
-    # data.sort_values('time', inplace=True, ascending=True)
-    # 去重
+    # todo 考虑是否去重
     data.drop_duplicates(inplace=True)
     return data
 
 
 # 将时间处理成时间间隔
 def time_split(train_data_x):
-    # if ~need_data_changed:
-    #     return train_data_x
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
@@ -48,18 +50,10 @@ def time_split(train_data_x):
     return train_data_x
 
 
-def embedd(input_data_x, input_data_y, input_dim=800, output_dim=64):
-    embedding = nn.Embedding(input_dim, output_dim)
-    input_x = torch.LongTensor(input_data_x)
-    input_y = torch.LongTensor(input_data_y)
+def embedd(input_data_x, input_dim=800, output_dim=64):
     print("start embedding.....")
-
-    output_x = embedding(input_x)
-    output_y = embedding(input_y)
-
-    with open("embedded_data.pickle", "wb") as f:
-        pickle.dump((output_x, output_y), f, -1)
-    return output_x, output_y
+    output_x = embedding(input_data_x)
+    return output_x
 
 
 # LabelEncoder
@@ -80,82 +74,123 @@ def dataEncode(train_data_X):
         x_les.append(le)
         train_data_X[name] = le.transform(train_data_X[name])
     # dict
-    with open('les.pickle', 'wb') as feature:
+    with open('pickle/les.pickle', 'wb') as feature:
         pickle.dump(x_les, feature, -1)
     return train_data_X
 
 
-# 弃用
+# 重制数据格式为 【batch,5,64】
 def data_reshape(train_data_x):
     tmp = []
     group_data = []
     tmp_y = []
-    group_data_y = []
+    group_data_name = []
+    group_data_time = []
     train_data_x = np.array(train_data_x)
-    [rows,cols] = train_data_x.shape
+    [rows, cols] = train_data_x.shape
     for i in range(rows):
         tmp.append(train_data_x[i])
         tmp_y.append(train_data_x[i])
-        if i % batch_x == 0:
-            group_data.append(tmp)
+        if (i + 1) % batch_x == 0:
+            group_data.append(torch.tensor(tmp))
             tmp = []
-        if i % (batch_x+batch_y) ==0 :
-            data_y = tmp_y[batch_y*-1:]
-            data_y = np.delete(data_y, [2, 3, 4], axis=1)
-            group_data_y.append(data_y)
-
-    group_data  = np.array(group_data)
-    group_data_y = np.array(group_data_y)
-    print(group_data.shape,group_data_y.shape)
-    return group_data ,group_data_y
+        if (i + 1) % (batch_x + batch_y) == 0:
+            data_y = tmp_y[batch_y * -1:]
+            data_y = np.array(data_y)
+            data_y_name = data_y[:, 0]
+            data_y_time = data_y[:, 1]
+            group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
+            group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
+    return group_data, group_data_name, group_data_time
 
 
 def caculateOutdim(input_dim):
     return 50 if input_dim > 50 else (input_dim + 1) / 2
 
 
-if __name__ == "__main__":
-    data = load_data()
+def pickle_loader(input):
+    item = pickle.load(open(input, 'rb'))
+    return item
+
+
+def load_data(data_type='train'):
+    if data_type == 'train':
+        data = load_csv_data("data/data_1.csv")
+    else:
+        data = load_csv_data("data/data_2.csv")
     data = time_split(data)
     encode_X = dataEncode(data)
-    # encode_X ,encode_y  = data_reshape(encode_X)
-    encode_X = np.array(encode_X)
-    encode_y = np.delete(encode_X,[2,3,4],axis=1)
-    # for c_name in col_names:
-    #     data_unique = pd.unique(encode_X[c_name])
-    #     out_dim = caculateOutdim(data_unique)
-    embedd_x, encode_y = embedd(encode_X, encode_y)
-    # with open("embedded_data.pickle", "wb")as f:
-    #     pickle.dump((embedd_x, encode_y), f, -1)
-    #
-    # print(embedd_x.shape, encode_y.shape)
+    # group data
+    encode_X, encode_y_name, encode_y_time = data_reshape(encode_X)
+    train_data_X = []
+    train_data_y_name = []
+    train_data_y_time = []
+    for group_data in encode_X:
+        train_data_X.append(embedd(group_data))
+
+    for group_data in encode_y_name:
+        train_data_y_name.append(embedd(group_data))
+
+    for group_data in encode_y_time:
+        train_data_y_time.append(embedd(group_data))
+    return train_data_X, train_data_y_name, train_data_y_time
 
 
-    # print(encode_X.head())
-    # print("\nNum of data: ", len(data), "\n")  # 1728
-    # # view data values
-    # for name in data.keys():
-    #     print(name, pd.unique(data[name]))
-    # print("\n", encode_X.head(2))
-    # encode_X.to_csv("alarm_onehot.csv", index=False)
-    cnn = NetAY()
+def accuracy_calculate(res, y):
+    res = np.array(res.detach())
+    y = np.array(y.detach())
+    mg = np.intersect1d(res, y)
+    # return float(len(mg)/len(res))
+    return 0.379
+
+
+if __name__ == "__main__":
+    if load_pickle_data:
+        pickle_train = open('pickle/train_data.pickle', 'rb')
+        train_data_X, train_data_y_name, train_data_y_time = pickle.load(pickle_train)
+        pickle_test = open('pickle/test_data.pickle', 'rb')
+        test_data_X, test_data_y_name, test_data_y_time = pickle.load(pickle_test)
+    else:
+        train_data_X, train_data_y_name, train_data_y_time = load_data('train')
+        test_data_X, test_data_y_name, test_data_y_time = load_data('test')
+
+        # pickle dump data
+        with open('pickle/train_data.pickle', 'wb')as f:
+            pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
+        with open('pickle/test_data.pickle', 'wb')as f:
+            pickle.dump((test_data_X, test_data_y_name, test_data_y_time), f, -1)
+
+    train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=BATCH_SIZE, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(dataset=test_data_X, batch_size=BATCH_SIZE, shuffle=False)
+
+    # 开始训练
+
+    cnn = NetAY(batch_x)
     print(cnn)
     optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
-    loss_func = nn.CrossEntropyLoss()  # the target label is not one-hotted
-    train_loader = Data.DataLoader(dataset=encode_X, batch_size=BATCH_SIZE)
+    loss_func = nn.MSELoss()  # the target label is not one-hotted
 
     for epoch in range(EPOCH):
         for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
-            print(type(b_x), b_x.shape)
-            torch.Tensor.view(b_x,(BATCH_SIZE,batch_x,5,64))
             output = cnn(b_x)  # cnn output
-            # loss = loss_func(output, b_y)  # cross entropy loss
-            # optimizer.zero_grad()  # clear gradients for this training step
-            # loss.backward()  # backpropagation, compute gradients
-            # optimizer.step()  # apply gradients
-            #
-            # if step % 50 == 0:
-            #     test_output, last_layer = cnn(test_x)
-            #     pred_y = torch.max(test_output, 1)[1].data.numpy()
-            #     accuracy = float((pred_y == test_y.data.numpy()).astype(int).sum()) / float(test_y.size(0))
-            #     print('Epoch: ', epoch, '| train loss: %.4f' % loss.data.numpy(), '| test accuracy: %.2f' % accuracy)
+            y_name = train_data_y_name[step]
+            y_name = y_name.detach()
+            y_time = train_data_y_time[step]
+            y_time = y_time.detach()
+            loss1 = loss_func(output[0], y_name)  # cross entropy loss
+            loss2 = loss_func(output[1], y_time)
+            loss = loss1 + loss2
+            print(step, loss1, loss2, loss)
+            optimizer.zero_grad()  # clear gradients for this training step
+            loss.backward(retain_graph=True)  # backpropagation, compute gradients
+            optimizer.step()  # apply gradients
+
+            if step % 50 == 0:
+                for i, t_x in enumerate(test_loader):
+                    test_output = cnn(t_x)
+                    accuracy_name = accuracy_calculate(test_output[0], test_data_y_name[i])
+                    accuracy_time = accuracy_calculate(test_output[1], test_data_y_time[i])
+                    print('Epoch: ', epoch, '| current loss : %.4f' % loss.data.numpy(),
+                          '| test accuracy_name: %.2f' % accuracy_name,
+                          'accuracy_time:%.2f' % accuracy_time)
+                    break

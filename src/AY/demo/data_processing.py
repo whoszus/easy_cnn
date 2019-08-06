@@ -6,7 +6,7 @@ import torch.nn as nn
 
 col_names = ["dev_name", "dev_type", "city", "alm_level"]
 def load_data():
-    data = pd.read_csv("data_1.csv", names=col_names,encoding='GBK')
+    data = pd.read_csv("data_2.csv", names=col_names,encoding='GBK')
     return data
 
 def embedd(input_data, input_dim, output_dim):

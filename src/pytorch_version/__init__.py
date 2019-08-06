@@ -1,1 +1,1 @@
-from .NNModule import  NetAY
+from pytorch_version.NNModule import  NetAY

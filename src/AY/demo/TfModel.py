@@ -13,7 +13,7 @@ def load_data():
 
     # use pandas to view the data structure
     col_names = ["buying", "maint", "doors", "persons", "lug_boot", "safety", "class"]
-    data = pd.read_csv("data_1.csv", names=col_names)
+    data = pd.read_csv("data_2.csv", names=col_names)
     return data
 
 
@@ -32,7 +32,7 @@ def load_data1():
 
     # use pandas to view the data structure
     col_names = ["dev_name", "dev_type", "city", "alm_level"]
-    data = pd.read_csv("data_1.csv", names=col_names,encoding='GBK')
+    data = pd.read_csv("data_2.csv", names=col_names,encoding='GBK')
     return data
 
 
