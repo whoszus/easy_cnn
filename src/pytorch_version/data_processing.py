@@ -140,8 +140,7 @@ def accuracy_calculate(res, y):
     res = np.array(res.detach())
     y = np.array(y.detach())
     mg = np.intersect1d(res, y)
-    # return float(len(mg)/len(res))
-    return 0.379
+    return float(len(mg)/len(res))
 
 
 if __name__ == "__main__":
