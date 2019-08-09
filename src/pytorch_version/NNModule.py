@@ -34,7 +34,7 @@ class ResidualBlock(nn.Module):
 
 
 class NetAY(nn.Module):
-    def __init__(self, batch_x):
+    def __init__(self, batch_x, batch_y):
         super(NetAY, self).__init__()
         self.layer1 = self.make_layer(batch_x, 128, n_res=3)
         self.layer2 = self.make_layer(128, 256, n_res=5)
@@ -45,7 +45,7 @@ class NetAY(nn.Module):
             nn.BatchNorm2d(128),
             nn.ReLU(),
             Flatten(),
-            nn.Linear(128 * 5 * 64, 64),
+            nn.Linear(128 * 5 * 5, batch_y),
             nn.LogSoftmax(dim=1)
         )
         self.out_2 = nn.Sequential(
@@ -53,9 +53,9 @@ class NetAY(nn.Module):
             nn.BatchNorm2d(128),
             nn.ReLU(),
             Flatten(),
-            nn.Linear(128 * 5 * 64, 128),
+            nn.Linear(128 * 5 * 5, 128),
             nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(128, batch_y),
             nn.Tanh()
         )
 
@@ -66,7 +66,7 @@ class NetAY(nn.Module):
         out_1 = self.out_1(x)
         out_2 = self.out_2(x)
         # out = torch.cat((out_1, out_2), 1).reshape(50,-1,64)
-        return out_1,out_2
+        return out_1, out_2
 
     def make_layer(self, in_c, out_c, n_res=3):
         layer_lst = nn.ModuleList([

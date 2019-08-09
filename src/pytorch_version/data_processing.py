@@ -15,12 +15,39 @@ need_data_changed = False
 batch_x = 10
 batch_y = 5
 LR = 0.001
-EPOCH = 3
+EPOCH = 200
 BATCH_SIZE = 5
 load_pickle_data = False
 
 # 声明为全局变量
-embedding = nn.Embedding(800, 64)
+embedding = nn.Embedding(500, batch_y)
+
+
+# 加载数据
+def load_data(data_type='train'):
+    if data_type == 'train':
+        data = load_csv_data("data/data_1.csv")
+    else:
+        data = load_csv_data("data/data_2.csv")
+    # 按时间切分
+    data = time_split(data)
+    # 转化为标签数据
+    encode_x = dataEncode(data)
+    # group data
+    encode_x, encode_y_name, encode_y_time = data_reshape(encode_x)
+    train_data_x = []
+    train_y_name = []
+    train_y_time = []
+    for group_data in encode_x:
+        train_data_x.append(embedd(group_data))
+
+    for group_data in encode_y_name:
+        train_y_name.append(embedd(group_data))
+
+    for group_data in encode_y_time:
+        train_y_time.append(embedd(group_data))
+
+    return train_data_x, train_y_name, train_y_time, encode_y_name, encode_y_time
 
 
 def load_csv_data(file):
@@ -65,7 +92,8 @@ def embedd(input_data_x, input_dim=800, output_dim=64):
 #     >>> le.transform(["tokyo", "tokyo", "paris"]) #doctest: +ELLIPSIS
 #     array([2, 2, 1]...)
 #     >>> list(le.inverse_transform([2, 2, 1]))
-#     ['tokyo', 'tokyo', 'paris']
+#     ['tokyo', 'tokyo', 'paris']、
+# 转化为标签数据
 def dataEncode(train_data_X):
     x_les = []
     for name in col_names:
@@ -104,7 +132,8 @@ def data_reshape(train_data_x):
     return group_data, group_data_name, group_data_time
 
 
-def caculateOutdim(input_dim):
+# 暂未使用
+def calculate_outdim(input_dim):
     return 50 if input_dim > 50 else (input_dim + 1) / 2
 
 
@@ -113,59 +142,81 @@ def pickle_loader(input):
     return item
 
 
-def load_data(data_type='train'):
-    if data_type == 'train':
-        data = load_csv_data("data/data_1.csv")
-    else:
-        data = load_csv_data("data/data_2.csv")
-    data = time_split(data)
-    encode_X = dataEncode(data)
-    # group data
-    encode_X, encode_y_name, encode_y_time = data_reshape(encode_X)
-    train_data_X = []
-    train_data_y_name = []
-    train_data_y_time = []
-    for group_data in encode_X:
-        train_data_X.append(embedd(group_data))
-
-    for group_data in encode_y_name:
-        train_data_y_name.append(embedd(group_data))
-
-    for group_data in encode_y_time:
-        train_data_y_time.append(embedd(group_data))
-    return train_data_X, train_data_y_name, train_data_y_time
-
-
-def accuracy_calculate(res, y):
+# ban
+def accuracy_calculate(res, y, train_data_X):
     res = np.array(res.detach())
     y = np.array(y.detach())
+    mg = np.intersect1d(res, res)
+
+    return float(len(mg) / len(res))
+    # res = res.squeeze().tolist()
+    # y = y.squeeze().tolist()
+    # return
+
+
+# todo
+def get_accuracy(module):
+    if load_pickle_data:
+        pickle_test = open('pickle/test_data.pickle', 'rb')
+        test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time = pickle.load(pickle_test)
+    else:
+        test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time = load_data('test')
+        with open('pickle/test_data.pickle', 'wb')as f:
+            pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time), f, -1)
+
+    print(module)
+    test_loader = torch.utils.data.DataLoader(dataset=test_data_x, batch_size=BATCH_SIZE, shuffle=False)
+    for i, t_x in enumerate(test_loader):
+        test_output = module(t_x)
+        name_l = test_output[0].chunk(chunks=batch_y, dim=0)
+        time_l = test_output[1].chunk(chunks=batch_y, dim=0)
+        result_n = []
+        result_t = []
+        for name in name_l:
+            similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(name).flatten()), 5)
+            result_n.append(words)
+        name_acy = get_name_acy(result_n, e_y_name[i])
+
+        for time in time_l:
+            similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(time).flatten()), 5)
+            result_n.append(words)
+        time_acy = get_tim_acy(result_t, e_y_time[i])
+        # print('Epoch: ', epoch, '| current loss : %.4f' % loss.data.numpy(),
+        #       '| test accuracy_name: %.2f' % name_acy,
+        #       'accuracy_time:%.2f' % time_acy)
+        print('| current loss : %.4f' % loss.data.numpy(), '| test accuracy_name: %.2f' % name_acy,
+              'accuracy_time:%.2f' % time_acy)
+
+
+def get_name_acy(m_res, y):
+    res = np.array(m_res)
+    y = np.array(y)
     mg = np.intersect1d(res, y)
-    return float(len(mg)/len(res))
+    return float(len(mg) / len(y))
 
 
+# todo ; How to measure time accuracy
+def get_tim_acy(m_res, y):
+    return 1
+
+
+# main
 if __name__ == "__main__":
     if load_pickle_data:
         pickle_train = open('pickle/train_data.pickle', 'rb')
-        train_data_X, train_data_y_name, train_data_y_time = pickle.load(pickle_train)
-        pickle_test = open('pickle/test_data.pickle', 'rb')
-        test_data_X, test_data_y_name, test_data_y_time = pickle.load(pickle_test)
+        train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = pickle.load(pickle_train)
+
     else:
-        train_data_X, train_data_y_name, train_data_y_time = load_data('train')
-        test_data_X, test_data_y_name, test_data_y_time = load_data('test')
+        train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = load_data('train')
 
         # pickle dump data
         with open('pickle/train_data.pickle', 'wb')as f:
             pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
-        with open('pickle/test_data.pickle', 'wb')as f:
-            pickle.dump((test_data_X, test_data_y_name, test_data_y_time), f, -1)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=BATCH_SIZE, shuffle=False)
-    test_loader = torch.utils.data.DataLoader(dataset=test_data_X, batch_size=BATCH_SIZE, shuffle=False)
 
     # 开始训练
-
-    cnn = NetAY(batch_x)
-    print(cnn)
+    cnn = NetAY(batch_x, batch_y)
     optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
     loss_func = nn.MSELoss()  # the target label is not one-hotted
 
@@ -176,20 +227,20 @@ if __name__ == "__main__":
             y_name = y_name.detach()
             y_time = train_data_y_time[step]
             y_time = y_time.detach()
-            loss1 = loss_func(output[0], y_name)  # cross entropy loss
+
+            #  MSELoss
+            loss1 = loss_func(output[0], y_name)
             loss2 = loss_func(output[1], y_time)
             loss = loss1 + loss2
-            print(step, loss1, loss2, loss)
+
+            # print(step, loss1, loss2, loss)
             optimizer.zero_grad()  # clear gradients for this training step
             loss.backward(retain_graph=True)  # backpropagation, compute gradients
             optimizer.step()  # apply gradients
 
-            if step % 50 == 0:
-                for i, t_x in enumerate(test_loader):
-                    test_output = cnn(t_x)
-                    accuracy_name = accuracy_calculate(test_output[0], test_data_y_name[i])
-                    accuracy_time = accuracy_calculate(test_output[1], test_data_y_time[i])
-                    print('Epoch: ', epoch, '| current loss : %.4f' % loss.data.numpy(),
-                          '| test accuracy_name: %.2f' % accuracy_name,
-                          'accuracy_time:%.2f' % accuracy_time)
-                    break
+            if step % 500 == 0:
+                get_accuracy(cnn)
+
+            # 5w save module
+            if step % 50000 == 0:
+                torch.save(cnn, "/module/step_" + str(step) + ".pickle")

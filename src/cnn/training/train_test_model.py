@@ -1,8 +1,10 @@
 import numpy
+
 numpy.random.seed(123)
 from cnn.training.models import *
 from sklearn.preprocessing import OneHotEncoder
 import sys
+
 sys.setrecursionlimit(10000)
 
 train_ratio = 0.9
@@ -85,7 +87,7 @@ if save_embeddings:
 
 
 def evaluate_models(models, X, y):
-    assert(min(y) > 0)
+    assert (min(y) > 0)
     guessed_sales = numpy.array([model.guess(X) for model in models])
     mean_sales = guessed_sales.mean(axis=0)
     relative_err = numpy.absolute((y - mean_sales) / y)
