@@ -50,10 +50,10 @@ def load_data(data_type='train'):
     return train_data_x, train_y_name, train_y_time, encode_y_name, encode_y_time
 
 
+# 加载数据 &drop_duplicates
 def load_csv_data(file):
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data['time'] = pd.to_datetime(data['time'])
-    # todo 考虑是否去重
     data.drop_duplicates(inplace=True)
     return data
 
