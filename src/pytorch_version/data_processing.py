@@ -29,7 +29,7 @@ embedding = nn.Embedding(500, batch_y)
 # 加载数据
 def load_data(data_type='train'):
     if data_type == 'train':
-        data = load_csv_data("data/data_2_500w.csv")
+        data = load_csv_data("data/data_1.csv")
     else:
         data = load_csv_data("data/test_1_8k.csv")
     # 按时间切分
@@ -60,7 +60,7 @@ def load_csv_data(file):
     print("开始加载数据..")
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
-    data['time'] = pd.to_datetime(data['time'],format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True,errors="raise")
+    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
@@ -250,25 +250,25 @@ if __name__ == "__main__":
 
     for epoch in range(EPOCH):
         for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
-            output = cnn(b_x)  # cnn output
-            y_name = train_data_y_name[step]
-            y_name = y_name.detach()
-            y_time = train_data_y_time[step]
-            y_time = y_time.detach()
+            if b_x.shape == torch.Size([batch_y, 256, 5, 64]):
+                output = cnn(b_x)  # cnn output
+                y_name = train_data_y_name[step]
+                y_name = y_name.detach()
+                y_time = train_data_y_time[step]
+                y_time = y_time.detach()
 
-            #  MSELoss
-            loss1 = loss_func(output[0], y_name)
-            loss2 = loss_func(output[1], y_time)
-            loss = loss1 + loss2
+                #  MSELoss
+                loss1 = loss_func(output[0], y_name)
+                loss2 = loss_func(output[1], y_time)
+                loss = loss1 + loss2
 
-            # print(step, loss1, loss2, loss)
-            optimizer.zero_grad()  # clear gradients for this training step
-            loss.backward(retain_graph=True)  # backpropagation, compute gradients
-            optimizer.step()  # apply gradients
+                print(step, loss1, loss2, loss)
+                optimizer.zero_grad()  # clear gradients for this training step
+                loss.backward(retain_graph=True)  # backpropagation, compute gradients
+                optimizer.step()  # apply gradients
 
-            if step % 500 == 0:
-                get_accuracy(cnn)
-
+            # if step % 500 == 0:
+        get_accuracy(cnn)
         module_name = "module/epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
         torch.save(cnn, module_name)
