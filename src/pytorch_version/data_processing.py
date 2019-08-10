@@ -29,7 +29,7 @@ embedding = nn.Embedding(500, batch_y)
 # 加载数据
 def load_data(data_type='train'):
     if data_type == 'train':
-        data = load_csv_data("data/data_1.csv")
+        data = load_csv_data("data/data_2_500w.csv")
     else:
         data = load_csv_data("data/test_1_8k.csv")
     # 按时间切分
