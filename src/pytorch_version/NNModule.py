@@ -36,24 +36,25 @@ class ResidualBlock(nn.Module):
 class NetAY(nn.Module):
     def __init__(self, batch_x, batch_y):
         super(NetAY, self).__init__()
-        self.layer1 = self.make_layer(batch_x, 128, n_res=3)
-        self.layer2 = self.make_layer(128, 256, n_res=5)
-        self.layer3 = self.make_layer(256, 128, n_res=3)
+        self.layer1 = self.make_layer(batch_x, 256, n_res=3)
+        self.layer2 = self.make_layer(256, 512, n_res=5)
+        self.layer3 = self.make_layer(512, batch_x, n_res=3)
 
         self.out_1 = nn.Sequential(
-            nn.Conv2d(128, 128, 1, 1),
+            nn.Conv2d(batch_x, 128, 1, 1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             Flatten(),
-            nn.Linear(128 * 5 * 5, batch_y),
+            # embedding = nn.Embedding(500, batch_y) 如果修改此处，batch_y要对应修改
+            nn.Linear(128 * 5 * batch_y, batch_y),
             nn.LogSoftmax(dim=1)
         )
         self.out_2 = nn.Sequential(
-            nn.Conv2d(128, 128, 1, 1),
+            nn.Conv2d(batch_x, 128, 1, 1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             Flatten(),
-            nn.Linear(128 * 5 * 5, 128),
+            nn.Linear(128 * 5 * batch_y, 128),
             nn.ReLU(),
             nn.Linear(128, batch_y),
             nn.Tanh()

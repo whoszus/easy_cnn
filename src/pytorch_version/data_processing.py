@@ -12,11 +12,11 @@ from pytorch_version.NNModule import NetAY
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
-batch_x = 10
-batch_y = 5
+batch_x = 256
+batch_y = 64
 LR = 0.001
-EPOCH = 200
-BATCH_SIZE = 5
+EPOCH = 60
+BATCH_SIZE = 64
 load_pickle_data = False
 
 # 声明为全局变量
@@ -26,9 +26,9 @@ embedding = nn.Embedding(500, batch_y)
 # 加载数据
 def load_data(data_type='train'):
     if data_type == 'train':
-        data = load_csv_data("data/data_1.csv")
+        data = load_csv_data("data/data_2_500w.csv")
     else:
-        data = load_csv_data("data/data_2.csv")
+        data = load_csv_data("data/test_1_8k.csv")
     # 按时间切分
     data = time_split(data)
     # 转化为标签数据
@@ -68,11 +68,18 @@ def time_split(train_data_x):
         if index % batch_x == 0:
             r_time.append(0)
         else:
-            seconds = (c_time[index + 1] - c_time[index]).seconds
+            # try:
+            # print(index,c_time[index],c_time[index-1])
+
+            seconds = (c_time[index] - c_time[index-1]).seconds
+            r_time.append(seconds)
+
+            # except:
+            #     print(c_time[index + 1],c_time[index])
             # if seconds > 1000:
             #     print(c_time[index], c_time[index + 1], seconds)
             #     print(index)
-            r_time.append(seconds)
+            # r_time.append(seconds)
     train_data_x['time'] = r_time
     return train_data_x
 
