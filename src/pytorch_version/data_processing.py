@@ -31,6 +31,7 @@ def load_data(data_type='train'):
     if data_type == 'train':
         data = load_csv_data("data/data_2_500w.csv")
     else:
+        print("进行测试.....")
         data = load_csv_data("data/test_1_8k.csv")
     # 按时间切分
     data = time_split(data)
@@ -268,6 +269,8 @@ if __name__ == "__main__":
 
             # if step % 500 == 0:
         get_accuracy(cnn)
+        print("保存第 %d 轮结果" % epoch )
         module_name = "module/epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
         torch.save(cnn, module_name)
+    print("训练结束...")
