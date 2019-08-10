@@ -78,7 +78,7 @@ def time_split(train_data_x):
 
 
 def embedd(input_data_x, input_dim=800, output_dim=64):
-    print("start embedding.....")
+    # print("start embedding.....")
     output_x = embedding(input_data_x)
     return output_x
 
@@ -174,17 +174,18 @@ def get_accuracy(module):
         result_t = []
         for name in name_l:
             similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(name).flatten()), 5)
-            result_n.append(words)
+            result_n.append(np.array(words))
         name_acy = get_name_acy(result_n, e_y_name[i])
 
         for time in time_l:
             similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(time).flatten()), 5)
-            result_n.append(words)
+            result_n.append(np.array(words))
         time_acy = get_tim_acy(result_t, e_y_time[i])
         # print('Epoch: ', epoch, '| current loss : %.4f' % loss.data.numpy(),
         #       '| test accuracy_name: %.2f' % name_acy,
         #       'accuracy_time:%.2f' % time_acy)
-        print('| current loss : %.4f' % loss.data.numpy(), '| test accuracy_name: %.2f' % name_acy,
+        print('current epoch :%d ' % epoch, '| current loss : %.4f' % loss.data.numpy(),
+              '| test accuracy_name: %.2f' % name_acy,
               'accuracy_time:%.2f' % time_acy)
 
 
@@ -241,6 +242,6 @@ if __name__ == "__main__":
             if step % 500 == 0:
                 get_accuracy(cnn)
 
-            # 5w save module
-            if step % 50000 == 0:
-                torch.save(cnn, "/module/step_" + str(step) + ".pickle")
+        module_name = "module/epoch_" + str(epoch) + ".pickle"
+        # with open(module_name, "wb") as f:
+        torch.save(cnn, module_name)
