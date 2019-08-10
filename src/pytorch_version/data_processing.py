@@ -1,4 +1,5 @@
-#
+# -*w- coding utf-8 -*-
+
 # todo 1. 需要修改为先各自embedding 之后合并tensor ！
 
 import pandas as pd
@@ -154,6 +155,7 @@ def accuracy_calculate(res, y, train_data_X):
     res = np.array(res.detach())
     y = np.array(y.detach())
     mg = np.intersect1d(res, res)
+    # print("")
 
     return float(len(mg) / len(res))
     # res = res.squeeze().tolist()
