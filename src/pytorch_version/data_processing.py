@@ -190,7 +190,7 @@ def get_accuracy(module):
         with open('pickle/test_data.pickle', 'wb')as f:
             pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time), f, -1)
 
-    print(module)
+    # print(module)
     test_loader = torch.utils.data.DataLoader(dataset=test_data_x, batch_size=BATCH_SIZE, shuffle=False)
     for i, t_x in enumerate(test_loader):
         test_output = module(t_x)
