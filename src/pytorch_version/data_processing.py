@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.utils.data as Data
-from pytorch_version.NNModule import NetAY
+from NNModule import NetAY
 import datetime
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
