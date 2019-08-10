@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.utils.data as Data
-from NNModule import NetAY
+from pytorch_version.NNModule import NetAY
 import datetime
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         with open('pickle/train_data.pickle', 'wb')as f:
             pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=BATCH_SIZE,shuffle=False)
 
     # 开始训练
     cnn = NetAY(batch_x, batch_y)
@@ -248,6 +248,7 @@ if __name__ == "__main__":
 
     for epoch in range(EPOCH):
         for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
+            print(step,b_x.shape)
             if b_x.shape == torch.Size([batch_y, 256, 5, 64]):
                 output = cnn(b_x)  # cnn output
                 y_name = train_data_y_name[step]
