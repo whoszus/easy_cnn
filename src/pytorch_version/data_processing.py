@@ -29,7 +29,7 @@ embedding = nn.Embedding(500, batch_y)
 # 加载数据
 def load_data(data_type='train'):
     if data_type == 'train':
-        data = load_csv_data("data/data_2_500w.csv")
+        data = load_csv_data("data/data_1.csv")
     else:
         data = load_csv_data("data/test_1_8k.csv")
     # 按时间切分
@@ -57,8 +57,8 @@ def load_data(data_type='train'):
 def load_csv_data(file):
     print("开始加载数据..")
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
-    data['time'] = pd.to_datetime(data['time'])
-    data.drop_duplicates(inplace=True)
+    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S')
+    data = data.drop_duplicates()
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
@@ -69,23 +69,25 @@ def time_split(train_data_x):
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
+    tmp_value = ''
+    len_x = 1
     for index, value in c_time.iteritems():
-
-        if index % batch_x == 0:
+        if len_x % batch_x == 0:
             r_time.append(0)
         else:
             # try:
             # print(index,c_time[index],c_time[index-1])
 
-            seconds = (c_time[index] - c_time[index - 1]).seconds
+            seconds = (value - tmp_value).seconds
             r_time.append(seconds)
-
-            # except:
-            #     print(c_time[index + 1],c_time[index])
-            # if seconds > 1000:
-            #     print(c_time[index], c_time[index + 1], seconds)
-            #     print(index)
-            # r_time.append(seconds)
+            tmp_value = value
+        len_x += 1
+        # except:
+        #     print(c_time[index + 1],c_time[index])
+        # if seconds > 1000:
+        #     print(c_time[index], c_time[index + 1], seconds)
+        #     print(index)
+        # r_time.append(seconds)
     train_data_x['time'] = r_time
     print("处理时间格式完毕..")
     return train_data_x
