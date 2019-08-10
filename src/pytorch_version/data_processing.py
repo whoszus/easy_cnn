@@ -60,7 +60,7 @@ def load_csv_data(file):
     print("开始加载数据..")
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
-    data['time'] = pd.to_datetime(data['time'], format='yyyy-MM-dd hh:mm:ss', errors='ignore')
+    data['time'] = pd.to_datetime(data['time'], format='yyyy-M-d hh:mm:ss', errors='ignore')
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
