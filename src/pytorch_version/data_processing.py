@@ -44,6 +44,8 @@ def load_data(data_type='train'):
     for group_data in encode_x:
         train_data_x.append(embedd(group_data))
 
+    print("embedding 结束：")
+
     for group_data in encode_y_name:
         train_y_name.append(embedd(group_data))
 
@@ -57,8 +59,8 @@ def load_data(data_type='train'):
 def load_csv_data(file):
     print("开始加载数据..")
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
+    data = data.drop_duplicates().dropna().reset_index(drop=True)
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S')
-    data = data.drop_duplicates()
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
@@ -69,19 +71,19 @@ def time_split(train_data_x):
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
-    tmp_value = ''
-    len_x = 1
+    # tmp_value = c_time[0]
+    # len_x = 1
     for index, value in c_time.iteritems():
-        if len_x % batch_x == 0:
+        if index % batch_x == 0:
             r_time.append(0)
         else:
             # try:
             # print(index,c_time[index],c_time[index-1])
 
-            seconds = (value - tmp_value).seconds
+            seconds = (c_time[index] - c_time[index - 1]).seconds
             r_time.append(seconds)
             tmp_value = value
-        len_x += 1
+        # len_x += 1
         # except:
         #     print(c_time[index + 1],c_time[index])
         # if seconds > 1000:
@@ -89,15 +91,15 @@ def time_split(train_data_x):
         #     print(index)
         # r_time.append(seconds)
     train_data_x['time'] = r_time
-    print("处理时间格式完毕..")
+    print("处理时间格式完毕..", train_data_x.head())
     return train_data_x
 
 
 def embedd(input_data_x, input_dim=800, output_dim=64):
-    print("开始embedding...", embedding)
+    # print("开始embedding...", embedding)
     # print("start embedding.....")
     output_x = embedding(input_data_x)
-    print("embedding结束..")
+    # print("embedding结束..")
     return output_x
 
 
@@ -123,7 +125,7 @@ def data_encode(train_data_X):
     # dict
     with open('pickle/les.pickle', 'wb') as feature:
         pickle.dump(x_les, feature, -1)
-    print("转换数据完毕》。")
+    print("转换数据完毕》。", train_data_X.head())
     return train_data_X
 
 
