@@ -71,20 +71,19 @@ def time_split(train_data_x):
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
-    # tmp_value = c_time[0]
-    # len_x = 1
-    for index, value in c_time.iteritems():
-        if type(value) == 'str':
-            print(value)
-        if index % batch_x == 0:
-            r_time.append(0)
-        else:
-            # try:
-            # print(index,c_time[index],c_time[index-1])
 
-            seconds = (c_time[index] - c_time[index - 1]).seconds
-            r_time.append(seconds)
-            tmp_value = value
+    for index, value in c_time.iteritems():
+        try:
+            if index % batch_x == 0:
+                r_time.append(0)
+            else:
+                # try:
+                # print(index,c_time[index],c_time[index-1])
+
+                seconds = (c_time[index] - c_time[index - 1]).seconds
+                r_time.append(seconds)
+        except:
+            print(index, c_time[index], c_time[index - 1])
         # len_x += 1
         # except:
         #     print(c_time[index + 1],c_time[index])
