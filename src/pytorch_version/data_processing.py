@@ -60,7 +60,7 @@ def load_csv_data(file):
     print("开始加载数据..")
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
-    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S',errors='ignore')
+    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', errors='ignore')
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
@@ -74,6 +74,8 @@ def time_split(train_data_x):
     # tmp_value = c_time[0]
     # len_x = 1
     for index, value in c_time.iteritems():
+        if type(value) == 'str':
+            print(value)
         if index % batch_x == 0:
             r_time.append(0)
         else:
