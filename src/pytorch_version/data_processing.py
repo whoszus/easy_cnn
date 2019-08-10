@@ -210,9 +210,7 @@ def get_accuracy(module):
         # print('Epoch: ', epoch, '| current loss : %.4f' % loss.data.numpy(),
         #       '| test accuracy_name: %.2f' % name_acy,
         #       'accuracy_time:%.2f' % time_acy)
-        print('current epoch :%d ' % epoch, '| current loss : %.4f' % loss.data.numpy(),
-              '| test accuracy_name: %.2f' % name_acy,
-              'accuracy_time:%.2f' % time_acy)
+        print('current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy, 'accuracy_time:%.2f' % time_acy)
 
 
 def get_name_acy(m_res, y):
