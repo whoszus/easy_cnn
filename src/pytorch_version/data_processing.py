@@ -15,12 +15,12 @@ import datetime
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
-batch_x = 256
+batch_x = 64
 batch_y = 64
 LR = 0.001
 EPOCH = 60
 BATCH_SIZE = 64
-load_pickle_data = False
+load_pickle_data = True
 
 # 声明为全局变量
 embedding = nn.Embedding(500, batch_y)
@@ -187,6 +187,7 @@ def get_accuracy(module):
         pickle_test = open('pickle/test_data.pickle', 'rb')
         test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time = pickle.load(pickle_test)
     else:
+        print("装载测试数据")
         test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time = load_data('test')
         with open('pickle/test_data.pickle', 'wb')as f:
             pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time), f, -1)
@@ -217,7 +218,10 @@ def get_accuracy(module):
 def get_name_acy(m_res, y):
     res = np.array(m_res)
     y = np.array(y)
+    print("预测结果：",res )
+    print("实际结果：", y)
     mg = np.intersect1d(res, y)
+    print("交集：", mg)
     return float(len(mg) / len(y))
 
 
@@ -240,7 +244,7 @@ if __name__ == "__main__":
         with open('pickle/train_data.pickle', 'wb')as f:
             pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=BATCH_SIZE,shuffle=False)
+    train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=BATCH_SIZE, shuffle=False)
 
     # 开始训练
     cnn = NetAY(batch_x, batch_y)
@@ -249,7 +253,7 @@ if __name__ == "__main__":
 
     for epoch in range(EPOCH):
         for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
-            print(step,b_x.shape)
+            print(step, b_x.shape)
             if b_x.shape == torch.Size([batch_y, 256, 5, 64]):
                 output = cnn(b_x)  # cnn output
                 y_name = train_data_y_name[step]
@@ -269,7 +273,7 @@ if __name__ == "__main__":
 
             # if step % 500 == 0:
         get_accuracy(cnn)
-        print("保存第 %d 轮结果" % epoch )
+        print("保存第 %d 轮结果" % epoch)
         module_name = "module/epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
         torch.save(cnn, module_name)
