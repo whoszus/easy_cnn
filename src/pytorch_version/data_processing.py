@@ -204,12 +204,12 @@ def get_accuracy(module):
         result_n_s = []
         for name in name_l:
             # 这一步操作是将embedding的数据类似翻译回来
-            similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(name).flatten()), 5)
+            similarity, words = torch.topk(torch.mv(embedding.weight, name.clone().detach().flatten()), 5)
             result_n.append(np.array(words))
             result_n_s.append(similarity.detach().numpy())
         name_acy = get_name_acy(result_n, result_n_s, e_y_name[i])
         for time in time_l:
-            similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(time).flatten()), 5)
+            similarity, words = torch.topk(torch.mv(embedding.weight, time.clone().detach().flatten()), 5)
             result_n.append(np.array(words))
         time_acy = get_tim_acy(result_t, e_y_time[i])
 
