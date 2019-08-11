@@ -192,6 +192,7 @@ def data_reshape_step(train_data_x, step_i=2):
             tmp = []
             tmp_y = []
     print("数据组装完毕...", datetime)
+    print("数据增加后数量....", len(group_data_name))
     return group_data, group_data_name, group_data_time
 
 
