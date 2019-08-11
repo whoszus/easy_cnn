@@ -128,7 +128,7 @@ def data_encode(train_data_X):
     # dict
     with open('pickle/les.pickle', 'wb') as feature:
         pickle.dump(x_les, feature, -1)
-    print("转换数据完毕》。", train_data_X.head())
+    print("转换数据完毕》。", train_data_X.head(),train_data_X.shape)
     return train_data_X
 
 
@@ -193,7 +193,7 @@ def get_accuracy(module):
         with open('pickle/test_data.pickle', 'wb')as f:
             pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time), f, -1)
 
-    # print(module)
+    # print(module) 开始进行测试
     test_loader = torch.utils.data.DataLoader(dataset=test_data_x, batch_size=BATCH_SIZE, shuffle=False)
     for i, t_x in enumerate(test_loader):
         test_output = module(t_x)
@@ -201,25 +201,26 @@ def get_accuracy(module):
         time_l = test_output[1].chunk(chunks=batch_y, dim=0)
         result_n = []
         result_t = []
+        result_n_s = []
         for name in name_l:
+            # 这一步操作是将embedding的数据类似翻译回来
             similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(name).flatten()), 5)
             result_n.append(np.array(words))
-        name_acy = get_name_acy(result_n, e_y_name[i])
-
+            result_n_s.append(np.array(similarity))
+        name_acy = get_name_acy(result_n, result_n_s, e_y_name[i])
         for time in time_l:
             similarity, words = torch.topk(torch.mv(embedding.weight, torch.tensor(time).flatten()), 5)
             result_n.append(np.array(words))
         time_acy = get_tim_acy(result_t, e_y_time[i])
-        # print('Epoch: ', epoch, '| current loss : %.4f' % loss.data.numpy(),
-        #       '| test accuracy_name: %.2f' % name_acy,
-        #       'accuracy_time:%.2f' % time_acy)
+
         print('current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy, 'accuracy_time:%.2f' % time_acy)
 
 
-def get_name_acy(m_res, y):
+def get_name_acy(m_res, m_res_s, y):
     res = np.array(m_res)
+    res_s = np.array(m_res_s)
     y = np.array(y)
-    print("预测结果：",res )
+    print("预测结果：", res, res_s)
     print("实际结果：", y)
     mg = np.intersect1d(res, y)
     print("交集：", mg)
@@ -237,10 +238,8 @@ if __name__ == "__main__":
     if load_pickle_data:
         pickle_train = open('pickle/train_data.pickle', 'rb')
         train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = pickle.load(pickle_train)
-
     else:
         train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = load_data('train')
-
         # pickle dump data
         with open('pickle/train_data.pickle', 'wb')as f:
             pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
