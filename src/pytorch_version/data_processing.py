@@ -15,10 +15,10 @@ import datetime
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
-batch_x = 64
+batch_x = 128
 batch_y = 64
 # LR = 0.001
-LR = 0.01
+LR = 0.003
 EPOCH = 60
 BATCH_SIZE = 64
 load_pickle_data = False
