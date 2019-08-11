@@ -30,6 +30,7 @@ embedding = nn.Embedding(500, batch_y)
 # 加载数据
 def load_data(data_type='train'):
     if data_type == 'train':
+        print("开始加载数据.....")
         data = load_csv_data("data/data_2_500w.csv")
     else:
         print("进行测试.....")
@@ -177,6 +178,7 @@ def data_reshape_step(train_data_x, step_i=2):
     while i < rows:
         tmp.append(train_data_x[i])
         tmp_y.append(train_data_x[i])
+        i += 1
         if (i + 1) % batch_x == 0:
             group_data.append(torch.tensor(tmp))
             tmp = []
@@ -189,6 +191,7 @@ def data_reshape_step(train_data_x, step_i=2):
             group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
             current_i += step_i
             i = current_i
+            print("当前装载进度：", current_i)
             tmp = []
             tmp_y = []
     print("数据组装完毕...", datetime)
