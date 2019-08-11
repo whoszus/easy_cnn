@@ -39,7 +39,7 @@ def load_data(data_type='train'):
     # 转化为标签数据
     encode_x = data_encode(data)
     # group data
-    encode_x, encode_y_name, encode_y_time = data_reshape(encode_x)
+    encode_x, encode_y_name, encode_y_time = data_reshape_step(encode_x)
     train_data_x = []
     train_y_name = []
     train_y_time = []
@@ -128,7 +128,7 @@ def data_encode(train_data_X):
     # dict
     with open('pickle/les.pickle', 'wb') as feature:
         pickle.dump(x_les, feature, -1)
-    print("转换数据完毕》。", train_data_X.head(),train_data_X.shape)
+    print("转换数据完毕》。", train_data_X.head(), train_data_X.shape)
     return train_data_X
 
 
@@ -155,6 +155,42 @@ def data_reshape(train_data_x):
             data_y_time = data_y[:, 1]
             group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
             group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
+    print("数据组装完毕...", datetime)
+    return group_data, group_data_name, group_data_time
+
+
+# 重制数据格式为 【batch,5,64】
+def data_reshape_step(train_data_x, step_i=2):
+    if not step_i:
+        return data_reshape(train_data_x)
+
+    print("开始组装数据..步长", step_i)
+    tmp = []
+    group_data = []
+    tmp_y = []
+    group_data_name = []
+    group_data_time = []
+    train_data_x = np.array(train_data_x)
+    [rows, cols] = train_data_x.shape
+    current_i = 1
+    i = 1
+    while i < rows:
+        tmp.append(train_data_x[i])
+        tmp_y.append(train_data_x[i])
+        if (i + 1) % batch_x == 0:
+            group_data.append(torch.tensor(tmp))
+            tmp = []
+        if (i + 1) % (batch_x + batch_y) == 0:
+            data_y = tmp_y[batch_y * -1:]
+            data_y = np.array(data_y)
+            data_y_name = data_y[:, 0]
+            data_y_time = data_y[:, 1]
+            group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
+            group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
+            current_i += step_i
+            i = current_i
+            tmp = []
+            tmp_y = []
     print("数据组装完毕...", datetime)
     return group_data, group_data_name, group_data_time
 
