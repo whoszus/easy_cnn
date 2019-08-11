@@ -20,7 +20,7 @@ batch_y = 64
 LR = 0.001
 EPOCH = 60
 BATCH_SIZE = 64
-load_pickle_data = True
+load_pickle_data = False
 
 # 声明为全局变量
 embedding = nn.Embedding(500, batch_y)
