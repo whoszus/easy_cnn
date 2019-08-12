@@ -11,7 +11,8 @@ import torch.nn as nn
 import numpy as np
 import torch.utils.data as Data
 from NNModule import NetAY
-import datetime
+import time
+
 # from tqdm import tqdm
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
@@ -23,6 +24,11 @@ LR = 0.003
 EPOCH = 60
 BATCH_SIZE = 64
 load_pickle_data = False
+c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')
+
+train_f = 'data/data_2_500w.csv'
+test_f = "data/test_1_8k.csv"
 
 # 声明为全局变量
 embedding = nn.Embedding(500, batch_y)
@@ -31,11 +37,11 @@ embedding = nn.Embedding(500, batch_y)
 # 加载数据
 def load_data(data_type='train'):
     if data_type == 'train':
-        print("开始加载数据.....")
-        data = load_csv_data("data/data_2_500w.csv")
+        print("开始加载数据.....", file=log_f)
+        data = load_csv_data(train_f)
     else:
-        print("进行测试.....")
-        data = load_csv_data("data/test_1_8k.csv")
+        print("进行测试.....", file=log_f)
+        data = load_csv_data(test_f)
     # 按时间切分
     data = time_split(data)
     # 转化为标签数据
@@ -48,7 +54,7 @@ def load_data(data_type='train'):
     for group_data in encode_x:
         train_data_x.append(embedd(group_data))
 
-    print("embedding 结束：")
+    print("embedding 结束：", file=log_f)
 
     for group_data in encode_y_name:
         train_y_name.append(embedd(group_data))
@@ -61,21 +67,20 @@ def load_data(data_type='train'):
 
 # 加载数据 &drop_duplicates
 def load_csv_data(file):
-    print("开始加载数据..")
+    print("开始加载数据..", file=log_f)
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
-    print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
+    print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data), file=log_f)
     return data
 
 
 # 将时间处理成时间间隔
 def time_split(train_data_x):
-    print("开始处理时间格式...")
+    print("开始处理时间格式...", file=log_f)
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
-    lat = datetime
     for index, value in c_time.iteritems():
         try:
             if index % batch_x == 0:
@@ -96,7 +101,7 @@ def time_split(train_data_x):
         #     print(index)
         # r_time.append(seconds)
     train_data_x['time'] = r_time
-    print("处理时间格式完毕..", train_data_x.head())
+    print("处理时间格式完毕..", train_data_x.head(), file=log_f)
     return train_data_x
 
 
@@ -120,7 +125,7 @@ def embedd(input_data_x, input_dim=800, output_dim=64):
 #     ['tokyo', 'tokyo', 'paris']、
 # 转化为标签数据
 def data_encode(train_data_X):
-    print("开始转换数据格式》...")
+    print("开始转换数据格式》...", file=log_f)
     x_les = []
     for name in col_names:
         le = preprocessing.LabelEncoder()
@@ -130,13 +135,13 @@ def data_encode(train_data_X):
     # dict
     with open('pickle/les.pickle', 'wb') as feature:
         pickle.dump(x_les, feature, -1)
-    print("转换数据完毕》。", train_data_X.head(), train_data_X.shape)
+    print("转换数据完毕》。", train_data_X.head(), train_data_X.shape, file=log_f)
     return train_data_X
 
 
 # 重制数据格式为 【batch,5,64】
 def data_reshape(train_data_x):
-    print("开始组装数据..")
+    print("开始组装数据..", file=log_f)
     tmp = []
     group_data = []
     tmp_y = []
@@ -157,7 +162,7 @@ def data_reshape(train_data_x):
             data_y_time = data_y[:, 1]
             group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
             group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
-    print("数据组装完毕...", datetime)
+    print("数据组装完毕...", file=log_f)
     return group_data, group_data_name, group_data_time
 
 
@@ -166,7 +171,7 @@ def data_reshape_step(train_data_x, step_i=12):
     if not step_i:
         return data_reshape(train_data_x)
 
-    print("开始组装数据..步长", step_i)
+    print("开始组装数据..步长", step_i, file=log_f)
     tmp = []
     group_data = []
     tmp_y = []
@@ -192,11 +197,11 @@ def data_reshape_step(train_data_x, step_i=12):
             group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
             current_i += step_i
             i = current_i
-            print("当前装载进度：", current_i)
+            print("当前装载进度：", current_i, file=log_f)
             tmp = []
             tmp_y = []
-    print("数据组装完毕...", datetime)
-    print("数据增加后数量....", len(group_data_name))
+    print("数据组装完毕...", time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), file=log_f)
+    print("数据增加后数量....", len(group_data_name), file=log_f)
     return group_data, group_data_name, group_data_time
 
 
@@ -261,10 +266,10 @@ def get_name_acy(m_res, m_res_s, y):
     res = np.array(m_res)
     res_s = np.array(m_res_s)
     y = np.array(y)
-    print("预测结果：", res, res_s)
-    print("实际结果：", y)
+    print("预测结果：", res, res_s, file=log_f)
+    print("实际结果：", y, file=log_f)
     mg = np.intersect1d(res, y)
-    print("交集：", mg)
+    print("交集：", mg, file=log_f)
     return float(len(mg) / len(y))
 
 
