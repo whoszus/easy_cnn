@@ -32,7 +32,7 @@ embedding = nn.Embedding(500, batch_y)
 def load_data(data_type='train'):
     if data_type == 'train':
         print("开始加载数据.....")
-        data = load_csv_data("data/data_2_500w.csv")
+        data = load_csv_data("data/data_1.csv")
     else:
         print("进行测试.....")
         data = load_csv_data("data/test_1_8k.csv")
@@ -294,8 +294,7 @@ if __name__ == "__main__":
 
     for epoch in range(EPOCH):
         for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
-            print(step, b_x.shape)
-            if b_x.shape == torch.Size([batch_y, 256, 5, 64]):
+            if b_x.shape[0] == 64:
                 output = cnn(b_x)  # cnn output
                 y_name = train_data_y_name[step]
                 y_name = y_name.detach()
