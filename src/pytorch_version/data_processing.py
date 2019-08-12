@@ -12,6 +12,7 @@ import numpy as np
 import torch.utils.data as Data
 from NNModule import NetAY
 import datetime
+from tqdm import tqdm
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
@@ -31,7 +32,7 @@ embedding = nn.Embedding(500, batch_y)
 def load_data(data_type='train'):
     if data_type == 'train':
         print("开始加载数据.....")
-        data = load_csv_data("data/data_2_500w.csv")
+        data = load_csv_data("data/data_1.csv")
     else:
         print("进行测试.....")
         data = load_csv_data("data/test_1_8k.csv")
@@ -74,7 +75,7 @@ def time_split(train_data_x):
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
-
+    lat = datetime
     for index, value in c_time.iteritems():
         try:
             if index % batch_x == 0:
@@ -101,7 +102,7 @@ def time_split(train_data_x):
 
 def embedd(input_data_x, input_dim=800, output_dim=64):
     # print("开始embedding...", embedding)
-    # print("start embedding.....")
+    # print("start embedding.....")`
     output_x = embedding(input_data_x)
     # print("embedding结束..")
     return output_x
@@ -179,10 +180,10 @@ def data_reshape_step(train_data_x, step_i=12):
         tmp.append(train_data_x[i])
         tmp_y.append(train_data_x[i])
         i += 1
-        if (i + 1) % batch_x == 0:
+        if len(tmp) % batch_x == 0:
             group_data.append(torch.tensor(tmp))
             tmp = []
-        if (i + 1) % (batch_x + batch_y) == 0:
+        if len(tmp) % (batch_x + batch_y) == 0:
             data_y = tmp_y[batch_y * -1:]
             data_y = np.array(data_y)
             data_y_name = data_y[:, 0]
