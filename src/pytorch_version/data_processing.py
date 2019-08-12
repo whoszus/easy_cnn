@@ -12,7 +12,7 @@ import numpy as np
 import torch.utils.data as Data
 from NNModule import NetAY
 import datetime
-from tqdm import tqdm
+# from tqdm import tqdm
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
@@ -32,7 +32,7 @@ embedding = nn.Embedding(500, batch_y)
 def load_data(data_type='train'):
     if data_type == 'train':
         print("开始加载数据.....")
-        data = load_csv_data("data/data_1.csv")
+        data = load_csv_data("data/data_2_500w.csv")
     else:
         print("进行测试.....")
         data = load_csv_data("data/test_1_8k.csv")
