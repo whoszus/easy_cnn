@@ -161,7 +161,7 @@ def data_reshape(train_data_x):
 
 
 # 重制数据格式为 【batch,5,64】
-def data_reshape_step(train_data_x, step_i=2):
+def data_reshape_step(train_data_x, step_i=12):
     if not step_i:
         return data_reshape(train_data_x)
 
