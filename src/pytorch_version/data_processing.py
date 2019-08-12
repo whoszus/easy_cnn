@@ -32,7 +32,7 @@ embedding = nn.Embedding(500, batch_y)
 def load_data(data_type='train'):
     if data_type == 'train':
         print("开始加载数据.....")
-        data = load_csv_data("data/data_1.csv")
+        data = load_csv_data("data/data_2_500w.csv")
     else:
         print("进行测试.....")
         data = load_csv_data("data/test_1_8k.csv")
