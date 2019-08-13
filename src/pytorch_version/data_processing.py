@@ -24,8 +24,46 @@ LR = 0.003
 EPOCH = 60
 BATCH_SIZE = 64
 load_pickle_data = False
-
+c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')
+
+train_f = 'data/data_1.csv'
+test_f = "data/test_1_8k.csv"
+
+
+# 声明为全局变量
+embedding = nn.Embedding(500, batch_y)
+
+
+# 加载数据
+def load_data(data_type='train'):
+    if data_type == 'train':
+        print("开始加载数据.....", file=log_f)
+        data = load_csv_data(train_f)
+    else:
+        print("进行测试.....", file=log_f)
+        data = load_csv_data(test_f)
+    # 按时间切分
+    data = time_split(data)
+    # 转化为标签数据
+    encode_x = data_encode(data)
+    # group data
+    encode_x, encode_y_name, encode_y_time = data_reshape_step(encode_x)
+    train_data_x = []
+    train_y_name = []
+    train_y_time = []
+    for group_data in encode_x:
+        train_data_x.append(embedd(group_data))
+
+    print("embedding 结束：", file=log_f)
+
+    for group_data in encode_y_name:
+        train_y_name.append(embedd(group_data))
+
+    for group_data in encode_y_time:
+        train_y_time.append(embedd(group_data))
+
+    return train_data_x, train_y_name, train_y_time, encode_y_name, encode_y_time
 
 
 # 加载数据 &drop_duplicates
@@ -36,6 +74,36 @@ def load_csv_data(file):
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data), file=log_f)
     return data
+
+
+# 将时间处理成时间间隔
+def time_split(train_data_x):
+    print("开始处理时间格式...", file=log_f)
+    print(type(train_data_x))
+    c_time = train_data_x['time']
+    r_time = []
+    for index, value in c_time.iteritems():
+        try:
+            if index % batch_x == 0:
+                r_time.append(0)
+            else:
+                # try:
+                # print(index,c_time[index],c_time[index-1])
+
+                seconds = (c_time[index] - c_time[index - 1]).seconds
+                r_time.append(seconds)
+        except:
+            print(index, c_time[index], c_time[index - 1])
+        # len_x += 1
+        # except:
+        #     print(c_time[index + 1],c_time[index])
+        # if seconds > 1000:
+        #     print(c_time[index], c_time[index + 1], seconds)
+        #     print(index)
+        # r_time.append(seconds)
+    train_data_x['time'] = r_time
+    print("处理时间格式完毕..", train_data_x.head(), file=log_f)
+    return train_data_x
 
 
 def embedd(input_data_x, input_dim=800, output_dim=64):
@@ -98,6 +166,44 @@ def data_reshape(train_data_x):
     print("数据组装完毕...", file=log_f)
     return group_data, group_data_name, group_data_time
 
+
+# 重制数据格式为 【batch,5,64】
+def data_reshape_step(train_data_x, step_i=12):
+    if not step_i:
+        return data_reshape(train_data_x)
+
+    print("开始组装数据..步长", step_i, file=log_f)
+    tmp = []
+    group_data = []
+    tmp_y = []
+    group_data_name = []
+    group_data_time = []
+    train_data_x = np.array(train_data_x)
+    [rows, cols] = train_data_x.shape
+    current_i = 1
+    i = 1
+    while i < rows:
+        tmp.append(train_data_x[i])
+        tmp_y.append(train_data_x[i])
+        i += 1
+        if len(tmp) % batch_x == 0:
+            group_data.append(torch.tensor(tmp))
+            tmp = []
+        if len(tmp) % (batch_x + batch_y) == 0:
+            data_y = tmp_y[batch_y * -1:]
+            data_y = np.array(data_y)
+            data_y_name = data_y[:, 0]
+            data_y_time = data_y[:, 1]
+            group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
+            group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
+            current_i += step_i
+            i = current_i
+            print("当前装载进度：", current_i, file=log_f)
+            tmp = []
+            tmp_y = []
+    print("数据组装完毕...", time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), file=log_f)
+    print("数据增加后数量....", len(group_data_name), file=log_f)
+    return group_data, group_data_name, group_data_time
 
 
 # 暂未使用
