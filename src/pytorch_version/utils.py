@@ -46,7 +46,9 @@ class MyDataSet(Dataset):
 
     def __getitem__(self, index):
         # 根据索引返回数据和对应的标签
-        return self.train_data_x[index], self.train_data_y_name[index], self.train_data_y_time[index], \
+        return self.train_data_x[index], \
+               self.train_data_y_name[index], \
+               self.train_data_y_time[index], \
                self.encode_y_name[index]
 
     def __len__(self):
@@ -54,7 +56,30 @@ class MyDataSet(Dataset):
         return self.len
 
 
-# 声明为全局变量
+class TestDataSet(Dataset):
+    """ my dataset."""
+
+    # Initialize your data, download, etc.
+    def __init__(self):
+        # 读取csv文件中的数据
+        train_data_x, train_data_y_name, train_data_y_time, encode_y_name = load_data_test()
+        self.train_data_x = train_data_x
+        self.train_data_y_name = train_data_y_name
+        self.train_data_y_time = train_data_y_time
+        self.encode_y_name = encode_y_name
+        self.len = len(self.train_data_x)
+
+    def __getitem__(self, index):
+        # 根据索引返回数据和对应的标签
+        return self.train_data_x[index], \
+               self.train_data_y_name[index], \
+               self.train_data_y_time[index], \
+               self.encode_y_name[index]
+
+    def __len__(self):
+        # 返回文件数据的数目
+        return self.len
+
 
 # 加载数据
 def load_data(batch_x, data_type='train'):
@@ -79,7 +104,7 @@ def load_data(batch_x, data_type='train'):
     # group data
     group_data, group_data_name, group_data_time = data_reshape_step(train_x, batch_x=batch_x,
                                                                      batch_y=batch_y)
-    return group_data, group_data_name, group_data_time, dev_name
+    return group_data, group_data_name, group_data_time, reshape_encode_data(dev_name)
 
 
 # 加载数据 &drop_duplicates
@@ -104,9 +129,6 @@ def time_split(train_data_x, batch_x):
             if index % batch_x == 0:
                 r_time.append(0)
             else:
-                # try:
-                # print(index,c_time[index],c_time[index-1])
-
                 seconds = (c_time[index] - c_time[index - 1]).seconds
                 r_time.append(seconds)
         except:
@@ -127,9 +149,9 @@ def embedd(input_data_x, type='dev_name'):
     if type == 'dev_name':
         output_x = embedding(input_data_x)
         # todo save embedding entiy
-    else:
-        output_x = embedding_time(input_data_x)
-    return output_x
+        # else:
+        # output_x = embedding_time(input_data_x)
+        return output_x
 
 
 # LabelEncoder
@@ -186,7 +208,27 @@ def data_reshape(train_data_x, batch_x, batch_y):
     return group_data, group_data_name, group_data_time
 
 
-# 重制数据格式为 【batch,5,64】
+def reshape_encode_data(encode_data, step_i=12):
+    encode_data = np.array(encode_data)
+    rows = encode_data.shape[0]
+    i = 1
+    current_i = 1
+    tmp = []
+    group_data = []
+    while i < rows:
+        tmp.append(encode_data[i])
+        i += 1
+        if len(tmp) % (batch_x + batch_y) == 0:
+            encode_y = tmp[batch_y * -1:]
+            group_data.append(torch.tensor(np.array(encode_y)))
+            current_i += step_i
+            i = current_i
+            tmp = []
+
+    return group_data
+
+
+# 重制数据格式为
 def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
     if not step_i:
         return data_reshape(train_data_x, batch_x, batch_y)
@@ -200,7 +242,7 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
     train_data_x = train_data_x.detach().numpy()
     [rows, cols] = train_data_x.shape
     current_i = 1
-    i = 1
+    i = 0
     while i < rows:
         tmp.append(train_data_x[i])
         tmp_y.append(train_data_x[i])
@@ -208,7 +250,7 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
         if len(tmp) % batch_x == 0:
             group_data.append(torch.tensor(tmp))
             tmp = []
-        if len(tmp) % (batch_x + batch_y) == 0:
+        if len(tmp_y) % (batch_x + batch_y) == 0:
             data_y = tmp_y[batch_y * -1:]  # 将倒数batch_y 条放入data_y
             data_y = np.array(data_y)
 
@@ -223,6 +265,8 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
             print("当前装载进度：", current_i, file=log_f)
             tmp = []
             tmp_y = []
+
+    group_data.pop(-1)  # 最后多出来一条没有对应的Y 值
     print("数据组装完毕...", time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), file=log_f)
     print("数据增加后数量....", len(group_data_name), file=log_f)
     return group_data, group_data_name, group_data_time
@@ -240,50 +284,49 @@ def pickle_loader(input):
 
 # todo
 def get_accuracy(module, epoch):
-    if load_pickle_data:
-        pickle_test = open('pickle/test_data.pickle', 'rb')
-        test_data_x, test_data_y_name, test_data_y_time, e_y_name = pickle.load(pickle_test)
-    else:
-        print("装载测试数据")
-        test_data_x, test_data_y_name, test_data_y_time, e_y_name = load_data(data_type='test',
-                                                                              batch_x=batch_x)
-        with open('pickle/test_data.pickle', 'wb')as f:
-            pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name), f, -1)
-
     # print(module) 开始进行测试
-    test_loader = torch.utils.data.DataLoader(dataset=test_data_x, batch_size=BATCH_SIZE, shuffle=False)
-    for i, t_x in enumerate(test_loader):
-        test_output = module(t_x)
-        name_l = test_output[0].chunk(chunks=batch_y, dim=0)
-        time_l = test_output[1].chunk(chunks=batch_y, dim=0)
+    test_data_set = TestDataSet()
+
+    test_loader = torch.utils.data.DataLoader(dataset=test_data_set, batch_size=1, shuffle=True)
+    for step, data in enumerate(test_loader):
+        test_data_x, test_data_y_name, test_data_y_time, encode_y_name = data
+
+        test_output = module(test_data_x.view(1, 1, 128, 17))
+        name_res = test_output[0].view(64, 16)
+        time_res = test_output[1].view(64)
+
         result_n = []
-        result_t = []
         result_n_s = []
-        for name in name_l:
+        for name in name_res:
             # 这一步操作是将embedding的数据类似翻译回来
-            similarity, words = torch.topk(torch.mv(embedding.weight, name.clone().detach().flatten()), 5)
+            similarity, words = torch.topk(torch.mv(embedding.weight, name.clone()), 1)
             result_n.append(np.array(words))
             result_n_s.append(similarity.detach().numpy())
-        name_acy = get_name_acy(result_n, result_n_s, e_y_name[i])
-        for time in time_l:
-            similarity, words = torch.topk(torch.mv(embedding.weight, time.clone().detach().flatten()), 5)
-            result_n.append(np.array(words))
-        time_acy = get_tim_acy(result_t, test_data_y_time[i])
 
-        print('current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
+        name_acy = get_name_acy(result_n, result_n_s, encode_y_name)
+        time_acy = get_tim_acy(time_res, test_data_y_time)
+
+        print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
               'accuracy_time:%.2f' % time_acy)
 
 
 def get_name_acy(m_res, m_res_s, y):
     res = np.array(m_res)
-    res_s = np.array(m_res_s)
+    res_sim = np.array(m_res_s)  # 相似度
     y = np.array(y)
-    print("预测结果：", res, res_s, file=log_f)
+    print("预测结果：", res, res_sim, file=log_f)
     print("实际结果：", y, file=log_f)
     mg = np.intersect1d(res, y)
-    print("交集：", mg, file=log_f)
-    return float(len(mg) / len(y))
-
+    if len(mg) > 0:
+        bc1 = np.bincount(res.flatten())
+        bc2 = np.bincount(y.flatten())
+        # 统计相同元素匹配个数
+        same_count_list = [min(bc1[x], bc2[x]) for x in mg]
+        same_count = sum(same_count_list)
+        print("交集：", mg, file=log_f)
+        return float(same_count / y.shape[1])
+    print("此轮无结果.......")
+    return 0.00
 
 # todo ; How to measure time accuracy
 def get_tim_acy(m_res, y):
@@ -293,14 +336,19 @@ def get_tim_acy(m_res, y):
 def load_data_final():
     print("start learning")
     if load_pickle_data:
-        train_data_X, train_data_y_name, train_data_y_time, encode_y_name, y_time = open(
-            'pickle/train_data.pickle', 'rb')
+        train_data_X, train_data_y_name, train_data_y_time, encode_y_name, y_time = open('pickle/train_data.pickle',
+                                                                                         'rb')
     else:
         train_data_X, train_data_y_name, train_data_y_time, encode_y_name = load_data(batch_x=batch_x)
         # pickle dump data
         # with open('pickle/train_data.pickle', 'wb')as f:
         #     pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
     return train_data_X, train_data_y_name, train_data_y_time, encode_y_name
+
+
+def load_data_test():
+    print("装载测试数据")
+    return load_data(data_type='test', batch_x=batch_x)
 
 
 if __name__ == '__main__':
@@ -334,7 +382,7 @@ if __name__ == '__main__':
             # if step % 50 == 0:
             print(step, loss1, loss2, loss)
 
-        get_accuracy(cnn, epoch)
+            get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
