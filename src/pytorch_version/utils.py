@@ -5,9 +5,14 @@ import pandas as pd
 from sklearn import preprocessing
 import pickle
 import torch
+import torch.nn as nn
 import numpy as np
 import torch.utils.data as Data
 import time
+from NNModule import NetAY
+
+LR = 0.003
+EPOCH = 200
 
 
 class Utils():
@@ -22,11 +27,15 @@ class Utils():
 
     train_f = 'data/data_1.csv'
     test_f = "data/test_1_8k.csv"
+    embedding = nn.Embedding(728, 16)
+    # embedding_time = nn.Embedding(512, 8)
+    batch_x = 128
+    batch_y = 64
 
     # 声明为全局变量
 
     # 加载数据
-    def load_data(self, data_type='train'):
+    def load_data(self, batch_x, data_type='train'):
         if data_type == 'train':
             print("开始加载数据.....", file=self.log_f)
             data = self.load_csv_data(self.train_f)
@@ -34,26 +43,21 @@ class Utils():
             print("进行测试.....", file=self.log_f)
             data = self.load_csv_data(self.test_f)
         # 按时间切分
-        data = self.time_split(data)
+        data = self.time_split(data, batch_x)
         # 转化为标签数据
         encode_x = self.data_encode(data)
+
+        # embedding
+        dev_name = encode_x['dev_name']
+        dev_name_embedding = self.embedd(torch.from_numpy(dev_name.values))
+        time_array = np.array(encode_x['time'].values, np.float32, copy=False)
+        # todo
+        time_tensor = torch.from_numpy(time_array).view(time_array.size, 1)
+        train_x = torch.cat((dev_name_embedding, time_tensor), 1)
         # group data
-        encode_x, encode_y_name, encode_y_time = self.data_reshape_step(encode_x)
-        train_data_x = []
-        train_y_name = []
-        train_y_time = []
-        for group_data in encode_x:
-            train_data_x.append(self.embedd(group_data))
-
-        print("embedding 结束：", file=self.log_f)
-
-        for group_data in encode_y_name:
-            train_y_name.append(self.embedd(group_data))
-
-        for group_data in encode_y_time:
-            train_y_time.append(self.embedd(group_data))
-
-        return train_data_x, train_y_name, train_y_time, encode_y_name, encode_y_time
+        group_data, group_data_name, group_data_time = self.data_reshape_step(train_x, batch_x=self.batch_x,
+                                                                              batch_y=self.batch_y)
+        return group_data, group_data_name, group_data_time, dev_name
 
     # 加载数据 &drop_duplicates
     def load_csv_data(self, file):
@@ -94,11 +98,12 @@ class Utils():
         print("处理时间格式完毕..", train_data_x.head(), file=self.log_f)
         return train_data_x
 
-    def embedd(self, input_data_x, input_dim=800, output_dim=64):
-        # print("开始embedding...", embedding)
-        # print("start embedding.....")`
-        output_x = self.embedding(input_data_x)
-        # print("embedding结束..")
+    def embedd(self, input_data_x, type='dev_name'):
+        if type == 'dev_name':
+            output_x = self.embedding(input_data_x)
+            # todo save embedding entiy
+        else:
+            output_x = self.embedding_time(input_data_x)
         return output_x
 
     # LabelEncoder
@@ -116,10 +121,11 @@ class Utils():
         print("开始转换数据格式》...", file=self.log_f)
         x_les = []
         for name in self.col_names:
-            le = preprocessing.LabelEncoder()
-            le.fit(train_data_X[name])
-            x_les.append(le)
-            train_data_X[name] = le.transform(train_data_X[name])
+            if name != 'time':
+                le = preprocessing.LabelEncoder()
+                le.fit(train_data_X[name])
+                x_les.append(le)
+                train_data_X[name] = le.transform(train_data_X[name])
         # dict
         with open('pickle/les.pickle', 'wb') as feature:
             pickle.dump(x_les, feature, -1)
@@ -153,9 +159,9 @@ class Utils():
         return group_data, group_data_name, group_data_time
 
     # 重制数据格式为 【batch,5,64】
-    def data_reshape_step(self, train_data_x, batch_x, batch_y, step_i=12, ):
+    def data_reshape_step(self, train_data_x, batch_x, batch_y, step_i=12):
         if not step_i:
-            return self.data_reshape(train_data_x)
+            return self.data_reshape(train_data_x, self.batch_x, self.batch_y)
 
         print("开始组装数据..步长", step_i, file=self.log_f)
         tmp = []
@@ -163,7 +169,7 @@ class Utils():
         tmp_y = []
         group_data_name = []
         group_data_time = []
-        train_data_x = np.array(train_data_x)
+        train_data_x = train_data_x.detach().numpy()
         [rows, cols] = train_data_x.shape
         current_i = 1
         i = 1
@@ -175,11 +181,14 @@ class Utils():
                 group_data.append(torch.tensor(tmp))
                 tmp = []
             if len(tmp) % (batch_x + batch_y) == 0:
-                data_y = tmp_y[batch_y * -1:]
+                data_y = tmp_y[batch_y * -1:]  # 将倒数batch_y 条放入data_y
                 data_y = np.array(data_y)
-                data_y_name = data_y[:, 0]
-                data_y_time = data_y[:, 1]
-                group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
+
+                data_y_name = data_y[:, 0:16]  # 第一列放入data_y_name
+
+                data_y_time = data_y[:, 16]  # 第二列放入data_y_time
+                group_data_name.append(
+                    torch.tensor(data_y_name, dtype=torch.long))  # 每batch_y条作为一个group 放入group_data_name
                 group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
                 current_i += step_i
                 i = current_i
@@ -199,22 +208,23 @@ class Utils():
         return item
 
     # todo
-    def get_accuracy(self, module, epoch, batch_y):
+    def get_accuracy(self, module, epoch):
         if self.load_pickle_data:
             pickle_test = open('pickle/test_data.pickle', 'rb')
-            test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time = pickle.load(pickle_test)
+            test_data_x, test_data_y_name, test_data_y_time, e_y_name = pickle.load(pickle_test)
         else:
             print("装载测试数据")
-            test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time = self.load_data('test')
+            test_data_x, test_data_y_name, test_data_y_time, e_y_name = self.load_data(data_type='test',
+                                                                                       batch_x=self.batch_x)
             with open('pickle/test_data.pickle', 'wb')as f:
-                pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name, e_y_time), f, -1)
+                pickle.dump((test_data_x, test_data_y_name, test_data_y_time, e_y_name), f, -1)
 
         # print(module) 开始进行测试
         test_loader = torch.utils.data.DataLoader(dataset=test_data_x, batch_size=self.BATCH_SIZE, shuffle=False)
         for i, t_x in enumerate(test_loader):
             test_output = module(t_x)
-            name_l = test_output[0].chunk(chunks=batch_y, dim=0)
-            time_l = test_output[1].chunk(chunks=batch_y, dim=0)
+            name_l = test_output[0].chunk(chunks=self.batch_y, dim=0)
+            time_l = test_output[1].chunk(chunks=self.batch_y, dim=0)
             result_n = []
             result_t = []
             result_n_s = []
@@ -227,7 +237,7 @@ class Utils():
             for time in time_l:
                 similarity, words = torch.topk(torch.mv(self.embedding.weight, time.clone().detach().flatten()), 5)
                 result_n.append(np.array(words))
-            time_acy = self.get_tim_acy(result_t, e_y_time[i])
+            time_acy = self.get_tim_acy(result_t, test_data_y_time[i])
 
             print('current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
                   'accuracy_time:%.2f' % time_acy)
@@ -249,10 +259,49 @@ class Utils():
     def load_data_final(self):
         print("start learning")
         if self.load_pickle_data:
-            pickle_train = open('pickle/train_data.pickle', 'rb')
+            train_data_X, train_data_y_name, train_data_y_time, encode_y_name, y_time = open(
+                'pickle/train_data.pickle', 'rb')
         else:
-            train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = self.load_data('train')
+            train_data_X, train_data_y_name, train_data_y_time, encode_y_name = self.load_data(batch_x=self.batch_x)
             # pickle dump data
-            with open('pickle/train_data.pickle', 'wb')as f:
-                pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
-            return train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time
+            # with open('pickle/train_data.pickle', 'wb')as f:
+            #     pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
+        return train_data_X, train_data_y_name, train_data_y_time, encode_y_name
+
+
+if __name__ == '__main__':
+    util = Utils()
+    train_data_X, train_data_y_name, train_data_y_time, encode_y_name = util.load_data_final()
+    train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=64, shuffle=False)
+
+    # 开始训练
+    cnn = NetAY(128, 64)
+    optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    loss_func = nn.MSELoss()  # the target label is not one-hotted
+
+    for epoch in range(EPOCH):
+        for step, b_x in enumerate(train_loader):  # gives batch data, normalize x when iterate train_loader
+            if b_x.shape[0] == 64:
+                output = cnn(b_x)  # cnn output
+                y_name = train_data_y_name[step]
+                y_name = y_name.detach()
+                y_time = train_data_y_time[step]
+                y_time = y_time.detach()
+
+                #  MSELoss
+                loss1 = loss_func(output[0], y_name)
+                loss2 = loss_func(output[1], y_time)
+                loss = loss1 + loss2
+
+                print(step, loss1, loss2, loss)
+                optimizer.zero_grad()  # clear gradients for this training step
+                loss.backward(retain_graph=True)  # backpropagation, compute gradients
+                optimizer.step()  # apply gradients
+
+            # if step % 500 == 0:
+        util.get_accuracy(cnn, epoch)
+        print("保存第 %d 轮结果" % epoch)
+        module_name = "module/epoch_" + str(epoch) + ".pickle"
+        # with open(module_name, "wb") as f:
+        torch.save(cnn, module_name)
+    print("训练结束...")

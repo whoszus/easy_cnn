@@ -6,20 +6,19 @@ import torch
 import torch.nn as nn
 import torch.utils.data as Data
 from NNModule import NetAY
-from .utils import Utils
+from utils import Utils
 
-batch_x = 128
-batch_y = 64
+
 LR = 0.003
 EPOCH = 200
 # main
 if __name__ == "__main__":
-
-    train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = Utils.load_data_final()
+    util = Utils()
+    train_data_X, train_data_y_name, train_data_y_time, encode_y_name, encode_y_time = util.load_data_final()
     train_loader = torch.utils.data.DataLoader(dataset=train_data_X, batch_size=64, shuffle=False)
 
     # 开始训练
-    cnn = NetAY(batch_x, batch_y)
+    cnn = NetAY(128, 64)
     optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
     loss_func = nn.MSELoss()  # the target label is not one-hotted
 
@@ -43,7 +42,7 @@ if __name__ == "__main__":
                 optimizer.step()  # apply gradients
 
             # if step % 500 == 0:
-        get_accuracy(cnn)
+        util.get_accuracy(cnn)
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
