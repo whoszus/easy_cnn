@@ -379,8 +379,8 @@ if __name__ == '__main__':
             optimizer.zero_grad()  # clear gradients for this training step
             loss.backward()  # backpropagation, compute gradients
             optimizer.step()  # apply gradients
-            # if step % 50 == 0:
-            print(step, loss1, loss2, loss)
+            if step % 50 == 0:
+                print(step, loss1, loss2, loss)
 
         get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
