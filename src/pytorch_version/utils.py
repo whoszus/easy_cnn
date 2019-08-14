@@ -23,7 +23,7 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_1.csv'
+train_f = 'data/data_2_500w.csv'
 test_f = "data/test_1_8k.csv"
 embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
@@ -382,7 +382,7 @@ if __name__ == '__main__':
             # if step % 50 == 0:
             print(step, loss1, loss2, loss)
 
-            get_accuracy(cnn, epoch)
+        get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
