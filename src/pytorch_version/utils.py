@@ -316,6 +316,7 @@ def get_accuracy(module, epoch):
             if name_acy > best:
                 best = name_acy
             if step > 100 and best < 0.1:
+                print("跳过本轮测试")
                 raise Exception
 
             print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
