@@ -29,6 +29,7 @@ embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
+verison = '1001'
 
 
 class MyDataSet(Dataset):
@@ -328,6 +329,7 @@ def get_name_acy(m_res, m_res_s, y):
     print("此轮无结果.......")
     return 0.00
 
+
 # todo ; How to measure time accuracy
 def get_tim_acy(m_res, y):
     return 1
@@ -353,7 +355,7 @@ def load_data_test():
 
 if __name__ == '__main__':
     my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True)
+    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True,num_workers=16)
 
     # 开始训练
     cnn = NetAY()
@@ -364,7 +366,6 @@ if __name__ == '__main__':
         for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
             try:
-
                 b_x = train_data_x.view(64, 1, 128, 17)
                 output = cnn(b_x)  # cnn output
                 # y_name = train_data_y_name[step]
@@ -387,7 +388,7 @@ if __name__ == '__main__':
                 print(train_data_x.shape)
         get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
-        module_name = "module/epoch_" + str(epoch) + ".pickle"
+        module_name = "module/" + verison + "epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
         torch.save(cnn, module_name)
 print("训练结束...")
