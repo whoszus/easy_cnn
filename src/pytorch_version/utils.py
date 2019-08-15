@@ -23,7 +23,7 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_2_500w.csv'
+train_f = 'data/data_1.csv'
 test_f = "data/test_data_500w-510w.csv"
 embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
@@ -414,19 +414,14 @@ if __name__ == '__main__':
     loss_func = nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss()
 
-
     prefetcher = DataPrefetch(train_loader)
     data = prefetcher.next()
     step = 0
-
-
-
 
     for epoch in range(EPOCH):
         # for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
         while data is not None:
             # print(step, len(data))
-            step += 1
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
             try:
                 b_x = train_data_x.view(64, 1, 128, 17)
@@ -448,6 +443,8 @@ if __name__ == '__main__':
                 print(train_data_x.shape)
             if (step + 1) % 100 == 0:
                 get_accuracy(cnn, epoch)
+
+            step += 1
             data = prefetcher.next()
 
         get_accuracy(cnn, epoch)
