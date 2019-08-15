@@ -399,7 +399,7 @@ if __name__ == '__main__':
                 print(step, loss1, loss2, loss, file=log_f)
             except:
                 print(train_data_x.shape)
-            if step % 500 == 0:
+            if (step+1) % 500 == 0:
                 get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/" + verison + "epoch_" + str(epoch) + ".pickle"
