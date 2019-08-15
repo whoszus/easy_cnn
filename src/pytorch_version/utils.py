@@ -23,8 +23,8 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_2_500w.csv'
-test_f = "data/test_1_8k.csv"
+train_f = 'data/data_1.csv'
+test_f = "data/data_2.csv"
 embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
@@ -127,10 +127,15 @@ def time_split(train_data_x, batch_x):
     r_time = []
     for index, value in c_time.iteritems():
         try:
-            if index % batch_x == 0:
+            if index == 0:
                 r_time.append(0)
             else:
-                seconds = (c_time[index] - c_time[index - 1]).seconds
+                get_sec = lambda x, y: (x - y).seconds if x > y else (y - x).seconds
+                get_sec_min = lambda x: x if x < 1000 else 1000
+
+                seconds = get_sec(c_time[index], c_time[index - 1])
+                if seconds > 900 :
+                    print(c_time[index], c_time[index - 1],(c_time[index]-c_time[index - 1]).seconds,seconds)
                 r_time.append(seconds)
         except:
             print(index, c_time[index], c_time[index - 1])
@@ -326,7 +331,7 @@ def get_name_acy(m_res, m_res_s, y):
         same_count = sum(same_count_list)
         print("交集：", mg, file=log_f)
         return float(same_count / y.shape[1])
-    print("此轮无结果.......")
+    print("此轮无结果.......", file=log_f)
     return 0.00
 
 
@@ -355,7 +360,7 @@ def load_data_test():
 
 if __name__ == '__main__':
     my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True,num_workers=16)
+    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=16)
 
     # 开始训练
     cnn = NetAY()
@@ -382,8 +387,8 @@ if __name__ == '__main__':
                 optimizer.zero_grad()  # clear gradients for this training step
                 loss.backward()  # backpropagation, compute gradients
                 optimizer.step()  # apply gradients
-                if step % 50 == 0:
-                    print(step, loss1, loss2, loss)
+                # if step % 50 == 0:
+                print(step, loss1, loss2, loss)
             except:
                 print(train_data_x.shape)
         get_accuracy(cnn, epoch)
