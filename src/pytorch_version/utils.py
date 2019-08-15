@@ -329,7 +329,7 @@ def get_name_acy(m_res, m_res_s, y):
     y = np.array(y)
     print("预测结果：", res, res_sim, file=log_f)
     print("实际结果：", y, file=log_f)
-    print("预测结果：", res, res_sim)
+    print("预测结果：", res)
     print("实际结果：", y)
     mg = np.intersect1d(res, y)
     print("交集：", mg)
