@@ -314,7 +314,7 @@ def get_accuracy(module, epoch):
         time_acy = get_tim_acy(time_res, test_data_y_time)
         if name_acy > best:
             best = name_acy
-        if step > 50 and best< 0.1:
+        if step > 50 and best < 0.1:
             break
 
         print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
@@ -345,7 +345,7 @@ def get_name_acy(m_res, m_res_s, y):
         # same_count = sum(same_count_list)
         # print("交集：", mg, file=log_f)
 
-        return float(len(mg) / np.unique(y).size())
+        return float(len(mg)/ len(np.unique(y)))
     print("此轮无结果.......", file=log_f)
     return 0.00
 
