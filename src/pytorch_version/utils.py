@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset
 import time
 from NNModule import NetAY
 
-LR = 0.01
+LR = 0.003
 EPOCH = 200
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
@@ -80,6 +80,28 @@ class TestDataSet(Dataset):
     def __len__(self):
         # 返回文件数据的数目
         return self.len
+
+
+class DataPrefetch():
+    def __init__(self, loader):
+        self.loader = iter(loader)
+        # self.stream = torch.cuda.Stream()
+        self.preload()
+
+    def preload(self):
+        try:
+            self.next_data = next(self.loader)
+        except StopIteration:
+            self.next_input = None
+            return
+        # with torch.cuda.stream(self.stream):
+        #     self.next_data = self.next_data.cuda(non_blocking=True)
+
+    def next(self):
+        # torch.cuda.current_stream().wait_stream(self.stream)
+        data = self.next_data
+        self.preload()
+        return data
 
 
 # 加载数据
@@ -391,8 +413,20 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
     loss_func = nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss()
+
+
+    prefetcher = DataPrefetch(train_loader)
+    data = prefetcher.next()
+    step = 0
+
+
+
+
     for epoch in range(EPOCH):
-        for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
+        # for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
+        while data is not None:
+            # print(step, len(data))
+            step += 1
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
             try:
                 b_x = train_data_x.view(64, 1, 128, 17)
@@ -414,6 +448,8 @@ if __name__ == '__main__':
                 print(train_data_x.shape)
             if (step + 1) % 100 == 0:
                 get_accuracy(cnn, epoch)
+            data = prefetcher.next()
+
         get_accuracy(cnn, epoch)
 
         print("保存第 %d 轮结果" % epoch)
