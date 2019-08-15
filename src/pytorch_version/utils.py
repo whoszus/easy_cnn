@@ -305,6 +305,7 @@ def get_accuracy(module, epoch):
 
             result_n = []
             result_n_s = []
+            count = 0
             for name in name_res:
                 # 这一步操作是将embedding的数据类似翻译回来
                 similarity, words = torch.topk(torch.mv(embedding.weight, name.clone()), 1)
@@ -315,12 +316,17 @@ def get_accuracy(module, epoch):
             time_acy = get_tim_acy(time_res, test_data_y_time)
             if name_acy > best:
                 best = name_acy
+            if name_acy > 0.5:
+                count += 1
             if step > 100 and best < 0.1:
                 print("跳过本轮测试")
                 raise Exception
+            if step > 800:
+                print("只测试500 个数据")
+                raise Exception
 
             print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
-                  'accuracy_time:%.2f' % time_acy)
+                  'accuracy_time:%.2f' % time_acy, 'acy beyond 50: ', count)
             print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
                   'accuracy_time:%.2f' % time_acy, file=log_f)
     except:
@@ -348,7 +354,7 @@ def get_name_acy(m_res, m_res_s, y):
         # same_count = sum(same_count_list)
         # print("交集：", mg, file=log_f)
 
-        return float(len(mg)/ len(np.unique(y)))
+        return float(len(mg) / len(np.unique(y)))
     print("此轮无结果.......", file=log_f)
     return 0.00
 
