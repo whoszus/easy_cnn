@@ -314,6 +314,8 @@ def get_accuracy(module, epoch):
         time_acy = get_tim_acy(time_res, test_data_y_time)
         if name_acy > best:
             best = name_acy
+        if step > 50 and best< 0.1:
+            break
 
         print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
               'accuracy_time:%.2f' % time_acy)
