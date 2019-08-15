@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset
 import time
 from NNModule import NetAY
 
-LR = 0.003
+LR = 0.01
 EPOCH = 200
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
@@ -320,7 +320,7 @@ def get_accuracy(module, epoch):
         print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
               'accuracy_time:%.2f' % time_acy, file=log_f)
 
-    torch.save(module,"modules/tmp"+str(best)+".pickle")
+    torch.save(module, "modules/tmp" + str(best) + ".pickle")
 
 
 def get_name_acy(m_res, m_res_s, y):
@@ -399,8 +399,10 @@ if __name__ == '__main__':
                 print(step, loss1, loss2, loss, file=log_f)
             except:
                 print(train_data_x.shape)
-            if (step+1) % 100 == 0:
+            if (step + 1) % 100 == 0:
                 get_accuracy(cnn, epoch)
+        get_accuracy(cnn, epoch)
+
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/" + verison + "epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
