@@ -347,8 +347,10 @@ def get_accuracy(module, epoch):
                 print("只测试500 个数据")
                 raise Exception
 
-            print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,'accuracy_time:%.2f' % time_acy, 'acy beyond 50: ', count)
-            print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,'accuracy_time:%.2f' % time_acy,'acy beyond 50: ', count, file=log_f)
+            print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
+                  'accuracy_time:%.2f' % time_acy, 'acy beyond 50: ', count)
+            print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
+                  'accuracy_time:%.2f' % time_acy, 'acy beyond 50: ', count, file=log_f)
     except:
         return
     torch.save(module, "modules/tmp" + str(best) + ".pickle")
@@ -358,10 +360,10 @@ def get_name_acy(m_res, m_res_s, y):
     res = np.array(m_res)
     res_sim = np.array(m_res_s)  # 相似度
     y = np.array(y)
-    print("预测结果：", res, res_sim, file=log_f)
-    print("实际结果：", y, file=log_f)
-    print("预测结果：", res)
-    print("实际结果：", y)
+    print("预测结果：", res.flatten(), res_sim.flatten(), file=log_f)
+    print("实际结果：", y.flatten(), file=log_f)
+    print("预测结果：", res.flatten())
+    print("实际结果：", y.flatten())
     mg = np.intersect1d(res, y)
     print("交集：", mg)
 
@@ -373,7 +375,7 @@ def get_name_acy(m_res, m_res_s, y):
         # same_count_list = [min(bc1[x], bc2[x]) for x in mg]
         # same_count = sum(same_count_list)
         # print("交集：", mg, file=log_f)
-        print("准确/预测总量:",len(mg),len(np.unique(m_res)))
+        print("准确/预测总量:", len(mg), len(np.unique(m_res)))
 
         return float(len(mg) / len(np.unique(y)))
     print("此轮无结果.......", file=log_f)
