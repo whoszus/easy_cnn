@@ -363,25 +363,28 @@ if __name__ == '__main__':
     for epoch in range(EPOCH):
         for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
-            b_x = train_data_x.view(64, 1, 128, 17)
-            output = cnn(b_x)  # cnn output
-            # y_name = train_data_y_name[step]
-            # y_name = y_name.detach()
-            # y_time = train_data_y_time[step]
-            # y_time = y_time.detach()
+            try:
 
-            #  MSELoss
-            loss1 = loss_func(output[0].view(64, 64, 16), train_data_y_name)
-            # similarity, words = torch.topk(torch.mv(embedding.weight, output[0][0].clone()), 5)
-            loss2 = loss_func(output[1].view(64, 64), train_data_y_time)
-            loss = loss1 + loss2
+                b_x = train_data_x.view(64, 1, 128, 17)
+                output = cnn(b_x)  # cnn output
+                # y_name = train_data_y_name[step]
+                # y_name = y_name.detach()
+                # y_time = train_data_y_time[step]
+                # y_time = y_time.detach()
 
-            optimizer.zero_grad()  # clear gradients for this training step
-            loss.backward()  # backpropagation, compute gradients
-            optimizer.step()  # apply gradients
-            if step % 50 == 0:
-                print(step, loss1, loss2, loss)
+                #  MSELoss
+                loss1 = loss_func(output[0].view(64, 64, 16), train_data_y_name)
+                # similarity, words = torch.topk(torch.mv(embedding.weight, output[0][0].clone()), 5)
+                loss2 = loss_func(output[1].view(64, 64), train_data_y_time)
+                loss = loss1 + loss2
 
+                optimizer.zero_grad()  # clear gradients for this training step
+                loss.backward()  # backpropagation, compute gradients
+                optimizer.step()  # apply gradients
+                if step % 50 == 0:
+                    print(step, loss1, loss2, loss)
+            except:
+                print(train_data_x.shape)
         get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/epoch_" + str(epoch) + ".pickle"

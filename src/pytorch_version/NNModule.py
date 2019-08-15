@@ -36,9 +36,9 @@ class ResidualBlock(nn.Module):
 class NetAY(nn.Module):
     def __init__(self):
         super(NetAY, self).__init__()
-        self.layer1 = self.make_layer(1, 256, n_res=3)
-        self.layer2 = self.make_layer(256, 512, n_res=5)
-        self.layer3 = self.make_layer(512, 128, n_res=3)
+        self.layer1 = self.make_layer(1, 128, n_res=3)
+        self.layer2 = self.make_layer(128, 256, n_res=5)
+        self.layer3 = self.make_layer(256, 128, n_res=3)
 
         self.out_1 = nn.Sequential(
             nn.Conv2d(128, 128, 1, 1),
