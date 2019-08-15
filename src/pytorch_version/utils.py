@@ -344,7 +344,7 @@ def get_accuracy(module, epoch):
                 print("跳过本轮测试")
                 raise Exception
             if step > 500:
-                print("只测试500 个数据")
+                print("只测试500 个数据,最好结果 %d" % str(best * 100), '%')
                 raise Exception
 
             print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
