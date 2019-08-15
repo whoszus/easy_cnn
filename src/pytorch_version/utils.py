@@ -335,13 +335,15 @@ def get_name_acy(m_res, m_res_s, y):
     print("交集：", mg)
 
     if len(mg) > 0:
-        bc1 = np.bincount(res.flatten())
-        bc2 = np.bincount(y.flatten())
-        # 统计相同元素匹配个数
-        same_count_list = [min(bc1[x], bc2[x]) for x in mg]
-        same_count = sum(same_count_list)
-        print("交集：", mg, file=log_f)
-        return float(same_count / y.shape[1])
+        # 此部分代码是同个位置，不合理，应为出现就算
+        # bc1 = np.bincount(res.flatten())
+        # bc2 = np.bincount(y.flatten())
+        # # 统计相同元素匹配个数
+        # same_count_list = [min(bc1[x], bc2[x]) for x in mg]
+        # same_count = sum(same_count_list)
+        # print("交集：", mg, file=log_f)
+
+        return float(len(mg) / np.unique(y).size())
     print("此轮无结果.......", file=log_f)
     return 0.00
 
