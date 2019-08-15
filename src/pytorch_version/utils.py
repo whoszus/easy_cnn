@@ -23,7 +23,7 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_1.csv'
+train_f = 'data/data_2_500w.csv'
 test_f = "data/test_data_500w-510w.csv"
 embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
