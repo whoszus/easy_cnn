@@ -134,8 +134,8 @@ def time_split(train_data_x, batch_x):
                 get_sec_min = lambda x: x if x < 1000 else 1000
 
                 seconds = get_sec(c_time[index], c_time[index - 1])
-                if seconds > 900 :
-                    print(c_time[index], c_time[index - 1],(c_time[index]-c_time[index - 1]).seconds,seconds)
+                if seconds > 900:
+                    print(c_time[index], c_time[index - 1], (c_time[index] - c_time[index - 1]).seconds, seconds)
                 r_time.append(seconds)
         except:
             print(index, c_time[index], c_time[index - 1])
@@ -294,6 +294,7 @@ def get_accuracy(module, epoch):
     test_data_set = TestDataSet()
 
     test_loader = torch.utils.data.DataLoader(dataset=test_data_set, batch_size=1, shuffle=True)
+    best = 0.00
     for step, data in enumerate(test_loader):
         test_data_x, test_data_y_name, test_data_y_time, encode_y_name = data
 
@@ -311,9 +312,15 @@ def get_accuracy(module, epoch):
 
         name_acy = get_name_acy(result_n, result_n_s, encode_y_name)
         time_acy = get_tim_acy(time_res, test_data_y_time)
+        if name_acy > best:
+            best = name_acy
 
         print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
               'accuracy_time:%.2f' % time_acy)
+        print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
+              'accuracy_time:%.2f' % time_acy, file=log_f)
+
+    torch.save(module,"modules/tmp"+str(best)+".pickle")
 
 
 def get_name_acy(m_res, m_res_s, y):
@@ -322,7 +329,11 @@ def get_name_acy(m_res, m_res_s, y):
     y = np.array(y)
     print("预测结果：", res, res_sim, file=log_f)
     print("实际结果：", y, file=log_f)
+    print("预测结果：", res, res_sim)
+    print("实际结果：", y)
     mg = np.intersect1d(res, y)
+    print("交集：", mg)
+
     if len(mg) > 0:
         bc1 = np.bincount(res.flatten())
         bc2 = np.bincount(y.flatten())
@@ -373,11 +384,7 @@ if __name__ == '__main__':
             try:
                 b_x = train_data_x.view(64, 1, 128, 17)
                 output = cnn(b_x)  # cnn output
-                # y_name = train_data_y_name[step]
-                # y_name = y_name.detach()
-                # y_time = train_data_y_time[step]
-                # y_time = y_time.detach()
-
+                # y_name
                 #  MSELoss
                 loss1 = loss_func(output[0].view(64, 64, 16), train_data_y_name)
                 # similarity, words = torch.topk(torch.mv(embedding.weight, output[0][0].clone()), 5)
@@ -389,9 +396,11 @@ if __name__ == '__main__':
                 optimizer.step()  # apply gradients
                 # if step % 50 == 0:
                 print(step, loss1, loss2, loss)
+                print(step, loss1, loss2, loss, file=log_f)
             except:
                 print(train_data_x.shape)
-        get_accuracy(cnn, epoch)
+            if step % 500 == 0:
+                get_accuracy(cnn, epoch)
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/" + verison + "epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
