@@ -295,33 +295,35 @@ def get_accuracy(module, epoch):
 
     test_loader = torch.utils.data.DataLoader(dataset=test_data_set, batch_size=1, shuffle=True)
     best = 0.00
-    for step, data in enumerate(test_loader):
-        test_data_x, test_data_y_name, test_data_y_time, encode_y_name = data
+    try:
+        for step, data in enumerate(test_loader):
+            test_data_x, test_data_y_name, test_data_y_time, encode_y_name = data
 
-        test_output = module(test_data_x.view(1, 1, 128, 17))
-        name_res = test_output[0].view(64, 16)
-        time_res = test_output[1].view(64)
+            test_output = module(test_data_x.view(1, 1, 128, 17))
+            name_res = test_output[0].view(64, 16)
+            time_res = test_output[1].view(64)
 
-        result_n = []
-        result_n_s = []
-        for name in name_res:
-            # 这一步操作是将embedding的数据类似翻译回来
-            similarity, words = torch.topk(torch.mv(embedding.weight, name.clone()), 1)
-            result_n.append(np.array(words))
-            result_n_s.append(similarity.detach().numpy())
+            result_n = []
+            result_n_s = []
+            for name in name_res:
+                # 这一步操作是将embedding的数据类似翻译回来
+                similarity, words = torch.topk(torch.mv(embedding.weight, name.clone()), 1)
+                result_n.append(np.array(words))
+                result_n_s.append(similarity.detach().numpy())
 
-        name_acy = get_name_acy(result_n, result_n_s, encode_y_name)
-        time_acy = get_tim_acy(time_res, test_data_y_time)
-        if name_acy > best:
-            best = name_acy
-        if step > 50 and best < 0.1:
-            break
+            name_acy = get_name_acy(result_n, result_n_s, encode_y_name)
+            time_acy = get_tim_acy(time_res, test_data_y_time)
+            if name_acy > best:
+                best = name_acy
+            if step > 100 and best < 0.1:
+                raise Exception
 
-        print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
-              'accuracy_time:%.2f' % time_acy)
-        print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
-              'accuracy_time:%.2f' % time_acy, file=log_f)
-
+            print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
+                  'accuracy_time:%.2f' % time_acy)
+            print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
+                  'accuracy_time:%.2f' % time_acy, file=log_f)
+    except:
+        return
     torch.save(module, "modules/tmp" + str(best) + ".pickle")
 
 
