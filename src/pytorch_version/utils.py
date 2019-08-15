@@ -29,7 +29,7 @@ embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
-verison = '1001'
+verison = 'm_1002_500w_'
 
 
 class MyDataSet(Dataset):
