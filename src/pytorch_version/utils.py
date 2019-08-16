@@ -27,8 +27,8 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_1.csv'
-test_f = "data/data_2.csv"
+train_f = 'data/data_2_500w.csv'
+test_f = "data/test_data_500w-510w"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
@@ -507,14 +507,14 @@ def train(cnn, data_test):
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
     my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8)
+    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8,pin_memory=True,drop_last=True)
 
-    prefetcher = DataPrefetch(train_loader)
-    data = prefetcher.next()
-    step = 0
+    # prefetcher = DataPrefetch(train_loader)
+    # data = prefetcher.next()
+    # step = 0
     for epoch in range(EPOCH):
-        # for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
-        while data is not None:
+        for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
+        # while data is not None:
             # print(step, len(data))
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = \
@@ -542,8 +542,8 @@ def train(cnn, data_test):
             #     print(train_data_x.shape)
             if (step + 1) % 300 == 0:
                 get_accuracy_tiny(cnn, epoch, data_test)
-            step += 1
-            data = prefetcher.next()
+            # step += 1
+            # data = prefetcher.next()
 
         get_accuracy_tiny(cnn, epoch, data_test)
 
