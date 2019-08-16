@@ -507,14 +507,15 @@ def train(cnn, data_test):
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
     my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8,pin_memory=True,drop_last=True)
+    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8, pin_memory=True,
+                              drop_last=True)
 
     # prefetcher = DataPrefetch(train_loader)
     # data = prefetcher.next()
     # step = 0
     for epoch in range(EPOCH):
         for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
-        # while data is not None:
+            # while data is not None:
             # print(step, len(data))
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = \
@@ -563,13 +564,14 @@ if __name__ == '__main__':
     cnn.to(device)
     cnn.share_memory()
     print(cnn)
-    processes = []
-    # 开启多进程
-    for rank in range(num_processes):
-        p = mp.Process(target=train, args=(cnn, data_test,))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    train(cnn, data_test)
+    # processes = []
+    # # 开启多进程
+    # for rank in range(num_processes):
+    #     p = mp.Process(target=train, args=(cnn, data_test,))
+    #     p.start()
+    #     processes.append(p)
+    # for p in processes:
+    #     p.join()
 
 print("训练结束...")
