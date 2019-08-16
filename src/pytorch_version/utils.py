@@ -506,6 +506,8 @@ def train(cnn, data_test):
 
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
+    my_data_set = MyDataSet()
+    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8)
 
     prefetcher = DataPrefetch(train_loader)
     data = prefetcher.next()
@@ -555,8 +557,6 @@ def train(cnn, data_test):
 
 if __name__ == '__main__':
     num_processes = 3
-    my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8)
 
     data_test = load_data_test()
 
