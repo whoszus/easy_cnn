@@ -554,7 +554,7 @@ def train(cnn, data_test):
 
 
 if __name__ == '__main__':
-    num_processes = 3
+    num_processes = 1
 
     data_test = load_data_test()
 
