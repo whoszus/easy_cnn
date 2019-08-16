@@ -27,8 +27,8 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_2_500w.csv'
-test_f = "data/test_data_500w-510w.csv"
+train_f = 'data/data_1.csv'
+test_f = "data/data_2.csv"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
@@ -540,8 +540,8 @@ def train(cnn, data_test):
             # except Exception , err :
             #     print(err)
             #     print(train_data_x.shape)
-            # if (step + 1) % 300 == 0:
-            get_accuracy_tiny(cnn, epoch, data_test)
+            if (step + 1) % 300 == 0:
+                get_accuracy_tiny(cnn, epoch, data_test)
             step += 1
             data = prefetcher.next()
 
@@ -554,7 +554,7 @@ def train(cnn, data_test):
 
 
 if __name__ == '__main__':
-    num_processes = 1
+    num_processes = 3
     my_data_set = MyDataSet()
     train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8)
 
