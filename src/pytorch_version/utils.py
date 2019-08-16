@@ -536,7 +536,7 @@ def train(cnn, data_test):
             optimizer.step()  # apply gradients
             # if step % 50 == 0:
             print(step, loss1, loss2, loss)
-            print(step, loss1, loss2, loss, file=log_f)
+            # print(step, loss1, loss2, loss, file=log_f)
             # except Exception , err :
             #     print(err)
             #     print(train_data_x.shape)
