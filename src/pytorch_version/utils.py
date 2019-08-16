@@ -512,8 +512,6 @@ def train(cnn, data_test):
     prefetcher = DataPrefetch(train_loader)
     data = prefetcher.next()
     step = 0
-    cnn.share_memory()
-
     for epoch in range(EPOCH):
         # for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
         while data is not None:
@@ -563,6 +561,7 @@ if __name__ == '__main__':
     cnn = NetAY()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cnn.to(device)
+    cnn.share_memory()
     print(cnn)
     processes = []
     # 开启多进程
