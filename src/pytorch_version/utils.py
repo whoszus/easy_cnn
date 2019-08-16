@@ -13,6 +13,7 @@ import time
 from NNModule import NetAY
 import torch.multiprocessing as mp
 import os
+import  threading
 
 # from cachetools import cached, TTLCache
 
@@ -22,7 +23,7 @@ EPOCH = 200
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
 # LR = 0.001
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
@@ -38,9 +39,10 @@ GPU = torch.cuda.is_available()
 
 embedding = nn.Embedding(728, 16)
 
-embedding = embedding.cuda() if GPU else embedding
-
 test_pickle_name = 'pickle/test_data.pickle'
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device_cpu = torch.device("cpu")
 
 
 class MyDataSet(Dataset):
@@ -239,7 +241,7 @@ def time_split(train_data_x, batch_x):
 
 def embedd(input_data_x, type='dev_name'):
     if type == 'dev_name':
-        output_x = embedding(input_data_x)
+        output_x = embedding(torch.tensor(input_data_x, dtype=torch.long))
         # todo save embedding entiy
         # else:
         # output_x = embedding_time(input_data_x)
@@ -418,7 +420,8 @@ def get_accuracy(module, epoch):
         try:
             for step, data in enumerate(test_loader):
                 test_data_x, test_data_y_name, test_data_y_time, encode_y_name = data
-                best_n, best_t = acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n, best_t)
+                best_n, best_t = acy(module.to(), test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n,
+                                     best_t)
             torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
         except Exception as e:
             print(e)
@@ -447,7 +450,7 @@ def get_accuracy_tiny(module, epoch, data_test):
             best_n, best_t = acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n, best_t)
             step += 1
     except Exception as e:
-        print(e)
+        print(repr(e))
     torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
 
 
@@ -507,7 +510,7 @@ def train(cnn, data_test):
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
     my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8, pin_memory=True,
+    train_loader = DataLoader(dataset=my_data_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True,
                               drop_last=True)
 
     # prefetcher = DataPrefetch(train_loader)
@@ -542,11 +545,16 @@ def train(cnn, data_test):
             #     print(err)
             #     print(train_data_x.shape)
             if (step + 1) % 300 == 0:
-                get_accuracy_tiny(cnn, epoch, data_test)
+                thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1", args=(cnn.to(device_cpu), epoch, data_test))
+                # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
+                thread1.start()
             # step += 1
             # data = prefetcher.next()
 
-        get_accuracy_tiny(cnn, epoch, data_test)
+        # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
+        thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程2", args=(cnn.to(device_cpu), epoch, data_test))
+        # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
+        thread1.start()
 
         print("保存第 %d 轮结果" % epoch)
         module_name = "module/" + verison + "epoch_" + str(epoch) + ".pickle"
@@ -555,14 +563,13 @@ def train(cnn, data_test):
 
 
 if __name__ == '__main__':
-    num_processes = 1
+    num_processes = 3
 
     data_test = load_data_test()
 
     cnn = NetAY()
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cnn.to(device)
-    cnn.share_memory()
+    # cnn.share_memory()
     print(cnn)
     train(cnn, data_test)
     # processes = []
@@ -573,5 +580,4 @@ if __name__ == '__main__':
     #     processes.append(p)
     # for p in processes:
     #     p.join()
-
-print("训练结束...")
+    print("训练结束...")
