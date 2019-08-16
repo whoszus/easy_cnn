@@ -25,11 +25,18 @@ log_f = open("logs/" + c_time + '.log', 'w+')
 
 train_f = 'data/data_2_500w.csv'
 test_f = "data/test_data_500w-510w.csv"
-embedding = nn.Embedding(728, 16)
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
 verison = 'm_1002_500w_'
+
+GPU = torch.cuda.is_available()
+
+embedding = nn.Embedding(728, 16)
+
+embedding = embedding.cuda() if GPU else embedding
+
+
 
 
 class MyDataSet(Dataset):
@@ -411,6 +418,10 @@ if __name__ == '__main__':
 
     # 开始训练
     cnn = NetAY()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    cnn.to(device)
+    print(cnn)
+
     optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
     loss_func = nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss()
@@ -423,7 +434,7 @@ if __name__ == '__main__':
         # for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
         while data is not None:
             # print(step, len(data))
-            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
+            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data.to(device)
             batch_size = len(train_data_x)
             try:
                 b_x = train_data_x.view(batch_size, 1, 128, 17)
