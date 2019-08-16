@@ -407,7 +407,7 @@ def load_data_test():
 
 if __name__ == '__main__':
     my_data_set = MyDataSet()
-    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=16)
+    train_loader = DataLoader(dataset=my_data_set, batch_size=64, shuffle=True, num_workers=8)
 
     # 开始训练
     cnn = NetAY()
@@ -424,14 +424,15 @@ if __name__ == '__main__':
         while data is not None:
             # print(step, len(data))
             train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
+            batch_size = len(train_data_x)
             try:
-                b_x = train_data_x.view(64, 1, 128, 17)
+                b_x = train_data_x.view(batch_size, 1, 128, 17)
                 output = cnn(b_x)  # cnn output
                 # y_name
                 #  MSELoss
-                loss1 = loss_func(output[0].view(64, 64, 16), train_data_y_name)
+                loss1 = loss_func(output[0].view(batch_size, 64, 16), train_data_y_name)
                 # similarity, words = torch.topk(torch.mv(embedding.weight, output[0][0].clone()), 5)
-                loss2 = loss_func(output[1].view(64, 64), train_data_y_time)
+                loss2 = loss_func(output[1].view(batch_size, 64), train_data_y_time)
                 loss = loss1 + loss2
 
                 optimizer.zero_grad()  # clear gradients for this training step
