@@ -13,7 +13,7 @@ import time
 from NNModule import NetAY
 import torch.multiprocessing as mp
 import os
-import  threading
+import threading
 
 # from cachetools import cached, TTLCache
 
@@ -198,18 +198,20 @@ def load_data(batch_x, data_type='train'):
 
 # 加载数据 &drop_duplicates
 def load_csv_data(file):
+    time_start = time.clock()
     print("开始加载数据..", file=log_f)
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True,
                                   errors="raise")
-    print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data), file=log_f)
+    print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data), "耗时：", time.clock() - time_start)
     return data
 
 
 # 将时间处理成时间间隔
 def time_split(train_data_x, batch_x):
-    print("开始处理时间格式...", file=log_f)
+    time_start = time.clock()
+    print("开始处理时间格式...")
     print(type(train_data_x))
     c_time = train_data_x['time']
     r_time = []
@@ -235,7 +237,7 @@ def time_split(train_data_x, batch_x):
         #     print(index)
         # r_time.append(seconds)
     train_data_x['time'] = r_time
-    print("处理时间格式完毕..", train_data_x.head(), file=log_f)
+    print("处理时间格式完毕..", train_data_x.head(), "用时：", time.clock() - time_start)
     return train_data_x
 
 
@@ -260,7 +262,7 @@ def embedd(input_data_x, type='dev_name'):
 #     ['tokyo', 'tokyo', 'paris']、
 # 转化为标签数据
 def data_encode(train_data_X):
-    print("开始转换数据格式》...", file=log_f)
+    print("开始转换数据格式》...")
     x_les = []
     for name in col_names:
         if name != 'time':
@@ -271,13 +273,13 @@ def data_encode(train_data_X):
     # dict
     with open('pickle/les.pickle', 'wb') as feature:
         pickle.dump(x_les, feature, -1)
-    print("转换数据完毕》。", train_data_X.head(), train_data_X.shape, file=log_f)
+    print("转换数据完毕》。", train_data_X.head(), train_data_X.shape)
     return train_data_X
 
 
 # 重制数据格式为 【batch,5,64】
 def data_reshape(train_data_x, batch_x, batch_y):
-    print("开始组装数据..", file=log_f)
+    print("开始组装数据..")
     tmp = []
     group_data = []
     tmp_y = []
@@ -298,11 +300,12 @@ def data_reshape(train_data_x, batch_x, batch_y):
             data_y_time = data_y[:, 1]
             group_data_name.append(torch.tensor(data_y_name, dtype=torch.long))
             group_data_time.append(torch.tensor(data_y_time, dtype=torch.long))
-    print("数据组装完毕...", file=log_f)
+    print("数据组装完毕...")
     return group_data, group_data_name, group_data_time
 
 
 def reshape_encode_data(encode_data, step_i=12):
+    time_start = time.clock()
     encode_data = np.array(encode_data)
     rows = encode_data.shape[0]
     i = 1
@@ -318,7 +321,7 @@ def reshape_encode_data(encode_data, step_i=12):
             current_i += step_i
             i = current_i
             tmp = []
-
+    print("耗时:", time.clock() - time_start)
     return group_data
 
 
@@ -327,7 +330,7 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
     if not step_i:
         return data_reshape(train_data_x, batch_x, batch_y)
 
-    print("开始组装数据..步长", step_i, file=log_f)
+    print("开始组装数据..步长", step_i)
     tmp = []
     group_data = []
     tmp_y = []
@@ -356,13 +359,13 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
             group_data_time.append(torch.tensor(data_y_time))
             current_i += step_i
             i = current_i
-            print("当前装载进度：", current_i, file=log_f)
+            print("当前装载进度：", current_i)
             tmp = []
             tmp_y = []
 
     group_data.pop(-1)  # 最后多出来一条没有对应的Y 值
-    print("数据组装完毕...", time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()), file=log_f)
-    print("数据增加后数量....", len(group_data_name), file=log_f)
+    print("数据组装完毕...", time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()))
+    print("数据增加后数量....", len(group_data_name))
     return group_data, group_data_name, group_data_time
 
 
@@ -510,9 +513,10 @@ def train(cnn, data_test):
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
     my_data_set = MyDataSet()
+    print("data ready ")
     train_loader = DataLoader(dataset=my_data_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True,
                               drop_last=True)
-
+    print("dataloader ready ")
     # prefetcher = DataPrefetch(train_loader)
     # data = prefetcher.next()
     # step = 0
@@ -545,7 +549,8 @@ def train(cnn, data_test):
             #     print(err)
             #     print(train_data_x.shape)
             if (step + 1) % 300 == 0:
-                thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1", args=(cnn.to(device_cpu), epoch, data_test))
+                thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1",
+                                           args=(cnn.to(device_cpu), epoch, data_test))
                 # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
                 thread1.start()
             # step += 1
