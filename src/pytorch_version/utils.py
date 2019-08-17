@@ -25,13 +25,13 @@ EPOCH = 200
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
 # LR = 0.001
-BATCH_SIZE = 16
+BATCH_SIZE = 12
 load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_2_500w.csv'
-test_f = "data/test_data_500w-510w.csv"
+train_f = 'h:data/data_2_500w.csv'
+test_f = "h:data/test_data_500w-510w.csv"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
@@ -46,8 +46,8 @@ test_pickle_name = 'pickle/test_data.pickle'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device_cpu = torch.device("cpu")
 
-train_data_store = 'pickle/train_data_500w.pickle'
-test_data_store = 'pickle/test_data_store_500.pickle'
+train_data_store = 'H:pickle/train_data_500w.pickle'
+test_data_store = 'H:pickle/test_data_store_500.pickle'
 
 
 class MyDataSet(Dataset):
@@ -549,8 +549,8 @@ def load_data_test():
 def train(cnn, data_test):
     cnn = cnn.to(device)
 
-    # optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
-    optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    # optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
 
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
