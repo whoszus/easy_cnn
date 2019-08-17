@@ -11,7 +11,6 @@ import torch.utils.data as Data
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 import time
 from NNModule import NetAY
-import torch.multiprocessing as mp
 import os
 import threading
 
