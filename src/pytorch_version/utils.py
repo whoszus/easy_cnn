@@ -548,8 +548,8 @@ def load_data_test():
 def train(cnn, data_test):
     cnn = cnn.to(device)
 
-    # optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
-    optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    # optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
 
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
