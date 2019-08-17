@@ -15,6 +15,8 @@ import torch.multiprocessing as mp
 import os
 import threading
 
+import copy
+
 # from cachetools import cached, TTLCache
 
 LR = 0.003
@@ -44,6 +46,9 @@ test_pickle_name = 'pickle/test_data.pickle'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device_cpu = torch.device("cpu")
 
+train_data_store = 'pickle/train_data_500w.pickle'
+test_data_store = 'pickle/test_data_store_500.pickle'
+
 
 class MyDataSet(Dataset):
     """ my dataset."""
@@ -51,7 +56,23 @@ class MyDataSet(Dataset):
     # Initialize your data, download, etc.
     def __init__(self):
         # 读取csv文件中的数据
-        train_data_x, train_data_y_name, train_data_y_time, encode_y_name = load_data_final()
+        if not os.path.exists(train_data_store):
+            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = load_data_final()
+            df = train_data_x, train_data_y_name, train_data_y_time, encode_y_name
+            with open(train_data_store, 'wb') as f:
+                pickle.dump(df, f, -1)
+            # data_store = pd.HDFStore(train_data_store)
+            # data_store['preprocessed_df'] = df
+            # data_store.close()
+        else:
+            with open(train_data_store, 'rb') as f:
+                train_data_x, train_data_y_name, train_data_y_time, encode_y_name = pickle.load(f)
+        # print("load hdfs data ....")
+        # data_store = pd.HDFStore(train_data_store)
+        # preprocessed_df = data_store['preprocessed_df']
+        # train_data_x, train_data_y_name, train_data_y_time, encode_y_name = preprocessed_df
+        # data_store.close()
+
         self.train_data_x = train_data_x
         self.train_data_y_name = train_data_y_name
         self.train_data_y_time = train_data_y_time
@@ -198,19 +219,19 @@ def load_data(batch_x, data_type='train'):
 
 # 加载数据 &drop_duplicates
 def load_csv_data(file):
-    time_start = time.clock()
+    time_start = time.time()
     print("开始加载数据..", file=log_f)
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True,
                                   errors="raise")
-    print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data), "耗时：", time.clock() - time_start)
+    print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data), "耗时：", time.time() - time_start)
     return data
 
 
 # 将时间处理成时间间隔
 def time_split(train_data_x, batch_x):
-    time_start = time.clock()
+    time_start = time.time()
     print("开始处理时间格式...")
     print(type(train_data_x))
     c_time = train_data_x['time']
@@ -237,7 +258,7 @@ def time_split(train_data_x, batch_x):
         #     print(index)
         # r_time.append(seconds)
     train_data_x['time'] = r_time
-    print("处理时间格式完毕..", train_data_x.head(), "用时：", time.clock() - time_start)
+    print("处理时间格式完毕..", train_data_x.head(), "用时：", time.time() - time_start)
     return train_data_x
 
 
@@ -305,7 +326,7 @@ def data_reshape(train_data_x, batch_x, batch_y):
 
 
 def reshape_encode_data(encode_data, step_i=12):
-    time_start = time.clock()
+    time_start = time.time()
     encode_data = np.array(encode_data)
     rows = encode_data.shape[0]
     i = 1
@@ -321,7 +342,7 @@ def reshape_encode_data(encode_data, step_i=12):
             current_i += step_i
             i = current_i
             tmp = []
-    print("耗时:", time.clock() - time_start)
+    print("耗时:", time.time() - time_start)
     return group_data
 
 
@@ -399,7 +420,7 @@ def acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_
     if name_acy > 0.5:
         count += 1
     if step > 500:
-        print("只测试500 个数据,最好结果 %d" % str(best_n * 100), '%')
+        print("只测试500 个数据,最好结果 %d" % (best_n * 100), '%')
         raise Exception
     if step > 100 and best_n < 0.3:
         print("跳过本轮测试")
@@ -442,10 +463,13 @@ def get_accuracy(module, epoch):
         torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
 
 
-def get_accuracy_tiny(module, epoch, data_test):
+def get_accuracy_tiny(cnnt, epoch, data_test):
+    time_start = time.time()
     best_n = 0.00
     best_t = 0.00
     step = 0
+    module = copy.deepcopy(cnnt)
+    module = module.to(device_cpu)
     test_data_set = M_Test_data(data_test)
     try:
         while step < test_data_set.len:
@@ -455,6 +479,7 @@ def get_accuracy_tiny(module, epoch, data_test):
     except Exception as e:
         print(repr(e))
     torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
+    print("test 500 cost time : ", time.time() - time_start, "best:", best_n)
 
 
 def get_name_acy(m_res, m_res_s, y):
@@ -503,10 +528,27 @@ def load_data_final():
 
 def load_data_test():
     print("装载测试数据")
-    return load_data(data_type='test', batch_x=batch_x)
+    if not os.path.exists(test_data_store):
+        data_test_store = load_data(data_type='test', batch_x=batch_x)
+        with open(test_data_store, 'wb') as f:
+            pickle.dump(data_test_store, f, -1)
+        # data_store = pd.HDFStore(train_data_store)
+        # data_store['data_test'] = data_test_store
+        # data_store.close()
+    else:
+        with open(test_data_store, 'rb') as f:
+
+            data_test_store = pickle.load(f)
+    # print("load hdfs test data ....")
+    # data_store = pd.HDFStore(train_data_store)
+    # data_test_store = data_store['data_test']
+    # data_store.close()
+    return data_test_store
 
 
 def train(cnn, data_test):
+    cnn = cnn.to(device)
+
     # optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
     optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
 
@@ -514,8 +556,7 @@ def train(cnn, data_test):
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
     my_data_set = MyDataSet()
     print("data ready ")
-    train_loader = DataLoader(dataset=my_data_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=8, pin_memory=True,
-                              drop_last=True)
+    train_loader = DataLoader(dataset=my_data_set, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, drop_last=True)
     print("dataloader ready ")
     # prefetcher = DataPrefetch(train_loader)
     # data = prefetcher.next()
@@ -550,14 +591,14 @@ def train(cnn, data_test):
             #     print(train_data_x.shape)
             if (step + 1) % 300 == 0:
                 thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1",
-                                           args=(cnn.to(device_cpu), epoch, data_test))
+                                           args=(cnn, epoch, data_test))
                 # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
                 thread1.start()
             # step += 1
             # data = prefetcher.next()
 
         # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
-        thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程2", args=(cnn.to(device_cpu), epoch, data_test))
+        thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程2", args=(cnn, epoch, data_test))
         # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
         thread1.start()
 
@@ -573,7 +614,6 @@ if __name__ == '__main__':
     data_test = load_data_test()
 
     cnn = NetAY()
-    cnn.to(device)
     # cnn.share_memory()
     print(cnn)
     train(cnn, data_test)
