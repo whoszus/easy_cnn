@@ -24,13 +24,13 @@ EPOCH = 200
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
 need_data_changed = False
 # LR = 0.001
-BATCH_SIZE = 256
+BATCH_SIZE = 12
 load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_2_500w.csv'
-test_f = "data/test_data_500w-510w.csv"
+train_f = 'data/data_1.csv'
+test_f = "data/data_2.csv"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64

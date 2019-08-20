@@ -7,6 +7,11 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 
+def swish(x):
+    sigmoid = nn.Sigmoid()
+    return x * sigmoid(x)
+
+
 class Flatten(nn.Module):
     def __init__(self):
         super(Flatten, self).__init__()
@@ -15,20 +20,27 @@ class Flatten(nn.Module):
         return x.view(x.size(0), -1)
 
 
+# https://github.com/wujiyang/Face_Pytorch/blob/d2f1ddb87d07b7a337223e885c0914764594686f/backbone/attention.py 1x1 参考
+
 class ResidualBlock(nn.Module):
     def __init__(self, in_c, out_c):
         super(ResidualBlock, self).__init__()
         self.residual = nn.Sequential(
-            nn.Conv2d(in_c, out_c, 1, 1),  # 输入和输出的feature 大小不变
+            nn.Conv2d(in_c, out_c, 1, 1),
+            # swish(),
+            # 输入和输出的feature 大小不变
+            nn.ReLU(inplace=True),
             nn.BatchNorm2d(out_c),
-            nn.ReLU(),
-            nn.Conv2d(out_c, out_c, 1, 1),
+            nn.Conv2d(out_c, out_c, 3, 1,padding=1),
+            # swish(),
             nn.BatchNorm2d(out_c),
+            # nn.ReLU(),
         )
 
     def forward(self, x):
         x = x + self.residual(x)
-        x = F.relu(x)
+        # x = F.relu(x)
+        x = swish(x)
         return x
 
 
@@ -37,10 +49,10 @@ class NetAY(nn.Module):
         super(NetAY, self).__init__()
         self.layer1 = self.make_layer(1, 128, n_res=3)
         self.layer2 = self.make_layer(128, 256, n_res=5)
-        self.layer3 = self.make_layer(256, 128, n_res=3)
+        self.layer3 = self.make_layer(256, 512, n_res=3)
 
         self.out_1 = nn.Sequential(
-            nn.Conv2d(128, 128, 1, 1),
+            nn.Conv2d(512, 128, 1, 1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             Flatten(),
@@ -49,14 +61,14 @@ class NetAY(nn.Module):
             # nn.LogSoftmax(dim=1)
         )
         self.out_2 = nn.Sequential(
-            nn.Conv2d(128, 128, 1, 1),
+            nn.Conv2d(512, 128, 1, 1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             Flatten(),
             nn.Linear(128 * 128 * 17, 128),
             nn.ReLU(),
             nn.Linear(128, 64),
-            nn.Tanh()
+            # nn.Tanh()
         )
 
     def forward(self, x):
