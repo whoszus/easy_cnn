@@ -45,8 +45,8 @@ test_pickle_name = 'pickle/test_data.pickle'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device_cpu = torch.device("cpu")
 
-train_data_store = 'pickle/train_data_500w.pickle'
-test_data_store = 'pickle/test_data_store_500.pickle'
+train_data_store = 'pickle/train_2_5w.pickle'
+test_data_store = 'pickle/test_2_5w.pickle'
 
 
 class MyDataSet(Dataset):
@@ -608,8 +608,6 @@ def train(cnn, data_test):
 
 
 if __name__ == '__main__':
-    num_processes = 3
-
     data_test = load_data_test()
 
     cnn = NetAY()
