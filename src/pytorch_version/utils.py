@@ -21,7 +21,7 @@ import copy
 LR = 0.003
 EPOCH = 200
 
-col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
+col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 need_data_changed = False
 # LR = 0.001
 BATCH_SIZE = 12
