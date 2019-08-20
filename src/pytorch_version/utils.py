@@ -93,7 +93,6 @@ class MyDataSet(Dataset):
 class TestDataSet(Dataset):
     """ my dataset."""
 
-    # Initialize your data, download, etc.
     def __init__(self):
         # 读取csv文件中的数据
         train_data_x, train_data_y_name, train_data_y_time, encode_y_name = load_data_test()
@@ -324,7 +323,7 @@ def data_reshape(train_data_x, batch_x, batch_y):
     return group_data, group_data_name, group_data_time
 
 
-def reshape_encode_data(encode_data, step_i=12):
+def reshape_encode_data(encode_data, step_i=1):
     time_start = time.time()
     encode_data = np.array(encode_data)
     rows = encode_data.shape[0]
@@ -346,7 +345,7 @@ def reshape_encode_data(encode_data, step_i=12):
 
 
 # 重制数据格式为
-def data_reshape_step(train_data_x, batch_x, batch_y, step_i=12):
+def data_reshape_step(train_data_x, batch_x, batch_y, step_i=1):
     if not step_i:
         return data_reshape(train_data_x, batch_x, batch_y)
 
@@ -477,7 +476,7 @@ def get_accuracy_tiny(cnnt, epoch, data_test):
             step += 1
     except Exception as e:
         print(repr(e))
-    torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
+    # torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
     print("test 500 cost time : ", time.time() - time_start, "best:", best_n)
 
 
