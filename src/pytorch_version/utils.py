@@ -34,7 +34,7 @@ test_f = "data/data_test_2_sort_5w.csv"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
-verison = 'm_1003_500w_'
+verison = 'm_1005_5w_'
 
 GPU = torch.cuda.is_available()
 
