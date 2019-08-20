@@ -29,8 +29,8 @@ load_pickle_data = False
 c_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 log_f = open("logs/" + c_time + '.log', 'w+')
 
-train_f = 'data/data_1.csv'
-test_f = "data/data_2.csv"
+train_f = 'data/data_train_2_sort_5w.csv'
+test_f = "data/data_test_2_sort_5w.csv"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
