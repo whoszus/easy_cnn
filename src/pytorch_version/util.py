@@ -5,9 +5,10 @@ from sklearn import preprocessing
 
 
 embedding = nn.Embedding(728, 8)
-col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
-train_f = "data/data_1.csv"
-test_f = "./data/test_1_8k.csv"
+col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
+
+train_f = "data/data_test_2_sort_5w.csv"
+test_f = "./data/data_test_2_sort_5w.csv"
 # log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')
 
 
@@ -20,7 +21,7 @@ def data_encode(train_data_X):
         le.fit(train_data_X[name])
         x_les.append(le)
         train_data_X[name] = le.transform(train_data_X[name])
-    print("转换数据完毕》。", train_data_X.head(), train_data_X.shape)
+    print(train_data_X.head(140), train_data_X.shape)
     return train_data_X
 
 

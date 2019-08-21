@@ -408,7 +408,7 @@ def acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_
     count = 0
     for name in name_res:
         # 这一步操作是将embedding的数据类似翻译回来
-        similarity, words = torch.topk(torch.mv(embedding.weight, name.clone()), 1)
+        similarity, words = torch.topk(torch.mv(embedding.weight, name.clone()), 3)
         result_n.append(np.array(words))
         result_n_s.append(similarity.detach().numpy())
 
