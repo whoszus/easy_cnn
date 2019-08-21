@@ -36,13 +36,13 @@ batch_x = 128
 batch_y = 64
 verison = 'm_1006_5w_'
 
-GPU = torch.cuda.is_available()
-
+# GPU = torch.cuda.is_available()
+GPU = False
 embedding = nn.Embedding(728, 16)
 
 test_pickle_name = 'pickle/test_data.pickle'
 
-device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:3" if GPU else "cpu")
 device_cpu = torch.device("cpu")
 
 train_data_store = 'pickle/train_2_5w.pickle'
