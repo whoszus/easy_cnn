@@ -612,6 +612,7 @@ if __name__ == '__main__':
     data_test = load_data_test()
 
     if os.path.exists(module_path):
+        print("加载预训练模块")
         cnn = torch.load(module_path)
     else:
         cnn = NetAY()
