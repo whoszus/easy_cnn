@@ -19,7 +19,7 @@ import copy
 
 # from cachetools import cached, TTLCache
 
-LR = 0.003
+LR = 0.01
 EPOCH = 200
 
 col_names = ["dev_name", "time", "dev_type", "city", "alm_level"]
@@ -35,7 +35,7 @@ test_f = "h:data/test_data_500w-510w.csv"
 # embedding_time = nn.Embedding(512, 8)
 batch_x = 128
 batch_y = 64
-verison = 'm_1003_500w_'
+verison = 'm_1004_500w_'
 
 GPU = torch.cuda.is_available()
 
@@ -48,6 +48,8 @@ device_cpu = torch.device("cpu")
 
 train_data_store = 'H:pickle/train_data_500w.pickle'
 test_data_store = 'H:pickle/test_data_store_500.pickle'
+
+pre_train_module = 'module/m_1003_500w_epoch_8.pickle'
 
 
 class MyDataSet(Dataset):
@@ -478,7 +480,7 @@ def get_accuracy_tiny(cnnt, epoch, data_test):
             step += 1
     except Exception as e:
         print(repr(e))
-    torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
+    # torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
     print("test 500 cost time : ", time.time() - time_start, "best:", best_n)
 
 
@@ -549,8 +551,8 @@ def load_data_test():
 def train(cnn, data_test):
     cnn = cnn.to(device)
 
-    optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
-    # optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    # optimizer = torch.optim.Adam(cnn.parameters(), lr=LR)  # optimize all cnn parameters
+    optimizer = torch.optim.SGD(cnn.parameters(), lr=LR)  # optimize all cnn parameters
 
     loss_func = nn.MSELoss().to(device) if GPU else nn.MSELoss()  # the target label is not one-hotted
     loss_func_name = nn.CrossEntropyLoss().to(device) if GPU else nn.CrossEntropyLoss()
@@ -603,7 +605,7 @@ def train(cnn, data_test):
         thread1.start()
 
         print("保存第 %d 轮结果" % epoch)
-        module_name = "module/" + verison + "epoch_" + str(epoch) + ".pickle"
+        module_name = "H:module/" + verison + "epoch_" + str(epoch) + ".pickle"
         # with open(module_name, "wb") as f:
         torch.save(cnn, module_name)
 
@@ -612,8 +614,10 @@ if __name__ == '__main__':
     num_processes = 3
 
     data_test = load_data_test()
-
-    cnn = NetAY()
+    if os.path.exists(pre_train_module):
+        cnn = torch.load(pre_train_module)
+    else:
+        cnn = NetAY()
     # cnn.share_memory()
     print(cnn)
     train(cnn, data_test)
