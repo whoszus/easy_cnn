@@ -389,8 +389,8 @@ def pickle_loader(input):
 
 def acy(module, test_data_x, encode_y_name, step, epoch, best_n, best_t):
     test_output = module(test_data_x.view(1, 1, 128, 32))
-    name_res = test_output[0].view(64, 16)
-    time_res = test_output[1].view(64)
+    name_res = test_output[0].view(64, 32)
+    # time_res = test_output[1].view(64)
 
     result_n = []
     result_n_s = []
