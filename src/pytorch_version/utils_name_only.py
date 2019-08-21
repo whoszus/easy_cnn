@@ -544,7 +544,7 @@ def train(cnn, data_test):
             # except Exception , err :
             #     print(err)
             #     print(train_data_x.shape)
-            if (step + 1) % 300 == 0:
+            if (step + 1) % 100 == 0:
                 thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1",
                                            args=(cnn, epoch, data_test))
                 # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
