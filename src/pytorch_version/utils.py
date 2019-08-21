@@ -47,6 +47,7 @@ device_cpu = torch.device("cpu")
 
 train_data_store = 'pickle/train_2_5w.pickle'
 test_data_store = 'pickle/test_2_5w.pickle'
+module_path = 'module/m_1005_5w_epoch_8.pickle'
 
 
 class MyDataSet(Dataset):
@@ -490,6 +491,7 @@ def get_name_acy(m_res, m_res_s, y):
     print("实际结果：", y.flatten())
     mg = np.intersect1d(res, y)
     print("交集：", mg)
+    print("交集：", mg, file=log_f)
 
     if len(mg) > 0:
         # 此部分代码是同个位置，不合理，应为出现就算
@@ -609,7 +611,10 @@ def train(cnn, data_test):
 if __name__ == '__main__':
     data_test = load_data_test()
 
-    cnn = NetAY()
+    if os.path.exists(module_path):
+        cnn = torch.load(module_path)
+    else:
+        cnn = NetAY()
     # cnn.share_memory()
     print(cnn)
     train(cnn, data_test)
