@@ -10,7 +10,7 @@ import numpy as np
 import torch.utils.data as Data
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 import time
-from NNModule import NetAY
+from NNModule import NetAY_name_only
 import os
 import threading
 
@@ -38,16 +38,16 @@ verison = 'm_1006_5w_'
 
 GPU = torch.cuda.is_available()
 
-embedding = nn.Embedding(728, 16)
+embedding = nn.Embedding(728, 32)
 
 test_pickle_name = 'pickle/test_data.pickle'
 
 device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
 device_cpu = torch.device("cpu")
-
+#
 train_data_store = 'pickle/train_2_5w.pickle'
 test_data_store = 'pickle/test_2_5w.pickle'
-module_path = 'module/m_1005_5w_epoch_8.pickle'
+module_path = 'module/ERROR.PICKLE'
 
 
 class MyDataSet(Dataset):
@@ -57,8 +57,8 @@ class MyDataSet(Dataset):
     def __init__(self):
         # 读取csv文件中的数据
         if not os.path.exists(train_data_store):
-            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = load_data_final()
-            df = train_data_x, train_data_y_name, train_data_y_time, encode_y_name
+            train_data_x, train_data_y_name, encode_y_name = load_data_final()
+            df = train_data_x, train_data_y_name, encode_y_name
             with open(train_data_store, 'wb') as f:
                 pickle.dump(df, f, -1)
             # data_store = pd.HDFStore(train_data_store)
@@ -66,16 +66,15 @@ class MyDataSet(Dataset):
             # data_store.close()
         else:
             with open(train_data_store, 'rb') as f:
-                train_data_x, train_data_y_name, train_data_y_time, encode_y_name = pickle.load(f)
+                train_data_x, train_data_y_name, encode_y_name = pickle.load(f)
         # print("load hdfs data ....")
         # data_store = pd.HDFStore(train_data_store)
         # preprocessed_df = data_store['preprocessed_df']
-        # train_data_x, train_data_y_name, train_data_y_time, encode_y_name = preprocessed_df
+        # train_data_x, train_data_y_name,  encode_y_name = preprocessed_df
         # data_store.close()
 
         self.train_data_x = train_data_x
         self.train_data_y_name = train_data_y_name
-        self.train_data_y_time = train_data_y_time
         self.encode_y_name = encode_y_name
         self.len = len(self.train_data_x)
 
@@ -83,7 +82,6 @@ class MyDataSet(Dataset):
         # 根据索引返回数据和对应的标签
         return self.train_data_x[index], \
                self.train_data_y_name[index], \
-               self.train_data_y_time[index], \
                self.encode_y_name[index]
 
     def __len__(self):
@@ -96,13 +94,12 @@ class TestDataSet(Dataset):
 
     def __init__(self):
         # 读取csv文件中的数据
-        train_data_x, train_data_y_name, train_data_y_time, encode_y_name = load_data_test()
+        train_data_x, train_data_y_name, encode_y_name = load_data_test()
         with open(test_pickle_name, 'wb') as f:
-            pickle.dump((train_data_x, train_data_y_name, train_data_y_time, encode_y_name), f, -1)
+            pickle.dump((train_data_x, train_data_y_name, encode_y_name), f, -1)
 
         self.train_data_x = train_data_x
         self.train_data_y_name = train_data_y_name
-        self.train_data_y_time = train_data_y_time
         self.encode_y_name = encode_y_name
         self.len = len(self.train_data_x)
 
@@ -110,7 +107,6 @@ class TestDataSet(Dataset):
         # 根据索引返回数据和对应的标签
         return self.train_data_x[index], \
                self.train_data_y_name[index], \
-               self.train_data_y_time[index], \
                self.encode_y_name[index]
 
     def __len__(self):
@@ -125,10 +121,9 @@ class TestPickleDataSet():
     def __init__(self):
         with open(test_pickle_name, 'rb') as f:
             data_pickle = pickle.load(f)
-            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data_pickle
+            train_data_x, train_data_y_name, encode_y_name = data_pickle
             self.train_data_x = train_data_x
             self.train_data_y_name = train_data_y_name
-            self.train_data_y_time = train_data_y_time
             self.encode_y_name = encode_y_name
             self.len = len(self.train_data_x)
 
@@ -136,7 +131,6 @@ class TestPickleDataSet():
         # 根据索引返回数据和对应的标签
         return self.train_data_x[index], \
                self.train_data_y_name[index], \
-               self.train_data_y_time[index], \
                self.encode_y_name[index]
 
     def __len__(self):
@@ -149,10 +143,9 @@ class M_Test_data():
 
     # Initialize your data, download, etc.
     def __init__(self, m_data):
-        train_data_x, train_data_y_name, train_data_y_time, encode_y_name = m_data
+        train_data_x, train_data_y_name, encode_y_name = m_data
         self.train_data_x = train_data_x
         self.train_data_y_name = train_data_y_name
-        self.train_data_y_time = train_data_y_time
         self.encode_y_name = encode_y_name
         self.len = len(self.train_data_x)
 
@@ -160,7 +153,6 @@ class M_Test_data():
         # 根据索引返回数据和对应的标签
         return self.train_data_x[index], \
                self.train_data_y_name[index], \
-               self.train_data_y_time[index], \
                self.encode_y_name[index]
 
     def __len__(self):
@@ -199,21 +191,21 @@ def load_data(batch_x, data_type='train'):
         print("进行测试.....", file=log_f)
         data = load_csv_data(test_f)
     # 按时间切分
-    data = time_split(data, batch_x)
+    # data = time_split(data, batch_x)
     # 转化为标签数据
     encode_x = data_encode(data)
 
     # embedding
     dev_name = encode_x['dev_name']
     dev_name_embedding = embedd(torch.from_numpy(dev_name.values))
-    time_array = np.array(encode_x['time'].values, np.float32, copy=False)
+    # time_array = np.array(encode_x['time'].values, np.float32, copy=False)
     # todo
-    time_tensor = torch.from_numpy(time_array).view(time_array.size, 1)
-    train_x = torch.cat((dev_name_embedding, time_tensor), 1)
+    # time_tensor = torch.from_numpy(time_array).view(time_array.size, 1)
+    # train_x = torch.cat((dev_name_embedding, time_tensor), 1)
     # group data
-    group_data, group_data_name, group_data_time = data_reshape_step(train_x, batch_x=batch_x,
-                                                                     batch_y=batch_y)
-    return group_data, group_data_name, group_data_time, reshape_encode_data(dev_name)
+    group_data, group_data_name = data_reshape_step(dev_name_embedding, batch_x=batch_x,
+                                                    batch_y=batch_y)
+    return group_data, group_data_name, reshape_encode_data(dev_name)
 
 
 # 加载数据 &drop_duplicates
@@ -355,7 +347,6 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=1):
     group_data = []
     tmp_y = []
     group_data_name = []
-    group_data_time = []
     train_data_x = train_data_x.detach().numpy()
     [rows, cols] = train_data_x.shape
     current_i = 1
@@ -371,12 +362,8 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=1):
             data_y = tmp_y[batch_y * -1:]  # 将倒数batch_y 条放入data_y
             data_y = np.array(data_y)
 
-            data_y_name = data_y[:, 0:16]  # 第一列放入data_y_name
-
-            data_y_time = data_y[:, 16] / 1000  # 第二列放入data_y_time 归一化
             group_data_name.append(
-                torch.tensor(data_y_name, dtype=torch.float32))  # 每batch_y条作为一个group 放入group_data_name
-            group_data_time.append(torch.tensor(data_y_time))
+                torch.tensor(data_y, dtype=torch.float32))  # 每batch_y条作为一个group 放入group_data_name
             current_i += step_i
             i = current_i
             print("当前装载进度：", current_i)
@@ -386,7 +373,7 @@ def data_reshape_step(train_data_x, batch_x, batch_y, step_i=1):
     group_data.pop(-1)  # 最后多出来一条没有对应的Y 值
     print("数据组装完毕...", time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()))
     print("数据增加后数量....", len(group_data_name))
-    return group_data, group_data_name, group_data_time
+    return group_data, group_data_name
 
 
 # 暂未使用
@@ -399,8 +386,8 @@ def pickle_loader(input):
     return item
 
 
-def acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n, best_t):
-    test_output = module(test_data_x.view(1, 1, 128, 17))
+def acy(module, test_data_x, encode_y_name, step, epoch, best_n, best_t):
+    test_output = module(test_data_x.view(1, 1, 128, 32))
     name_res = test_output[0].view(64, 16)
     time_res = test_output[1].view(64)
 
@@ -414,7 +401,6 @@ def acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_
         result_n_s.append(similarity.detach().numpy())
 
     name_acy = get_name_acy(result_n, result_n_s, encode_y_name)
-    time_acy = get_tim_acy(time_res, test_data_y_time)
 
     if name_acy > 0.5:
         count += 1
@@ -426,40 +412,10 @@ def acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_
         raise Exception
 
     print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
-          'accuracy_time:%.2f' % time_acy, 'acy beyond 50: ', count)
+          'acy beyond 50: ', count)
     print(step, 'current epoch :%d ' % epoch, '| test accuracy_name: %.2f' % name_acy,
-          'accuracy_time:%.2f' % time_acy, 'acy beyond 50: ', count, file=log_f)
-    return best_n if name_acy < best_n else name_acy, best_t if time_acy < best_t else time_acy
-
-
-# todo
-def get_accuracy(module, epoch):
-    # print(module) 开始进行测试
-    best_n = 0.00
-    best_t = 0.00
-    if not os.path.exists(test_pickle_name):
-        test_data_set = TestDataSet()
-        test_loader = torch.utils.data.DataLoader(dataset=test_data_set, batch_size=1, shuffle=True)
-        try:
-            for step, data in enumerate(test_loader):
-                test_data_x, test_data_y_name, test_data_y_time, encode_y_name = data
-                best_n, best_t = acy(module.to(), test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n,
-                                     best_t)
-            torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
-        except Exception as e:
-            print(e)
-            return
-    else:
-        test_data_set = TestPickleDataSet()
-        step = 0
-        try:
-            while step < test_data_set.len:
-                test_data_x, test_data_y_name, test_data_y_time, encode_y_name = test_data_set.__getitem__(step)
-                best_n, best_t = acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n, best_t)
-                step += 1
-        except Exception as e:
-            print(e)
-        torch.save(module, "modules/tmp" + str(best_n) + ".pickle")
+          'acy beyond 50: ', count, file=log_f)
+    return best_n if name_acy < best_n else name_acy
 
 
 def get_accuracy_tiny(cnnt, epoch, data_test):
@@ -472,8 +428,8 @@ def get_accuracy_tiny(cnnt, epoch, data_test):
     test_data_set = M_Test_data(data_test)
     try:
         while step < test_data_set.len:
-            test_data_x, test_data_y_name, test_data_y_time, encode_y_name = test_data_set.__getitem__(step)
-            best_n, best_t = acy(module, test_data_x, encode_y_name, test_data_y_time, step, epoch, best_n, best_t)
+            test_data_x, test_data_y_name, encode_y_name = test_data_set.__getitem__(step)
+            best_n, best_t = acy(module, test_data_x, encode_y_name, step, epoch, best_n, best_t)
             step += 1
     except Exception as e:
         print(repr(e))
@@ -516,14 +472,14 @@ def get_tim_acy(m_res, y):
 def load_data_final():
     print("start learning")
     if load_pickle_data:
-        train_data_X, train_data_y_name, train_data_y_time, encode_y_name, y_time = open('pickle/train_data.pickle',
-                                                                                         'rb')
+        train_data_X, train_data_y_name, encode_y_name, y_time = open('pickle/train_data.pickle',
+                                                                      'rb')
     else:
-        train_data_X, train_data_y_name, train_data_y_time, encode_y_name = load_data(batch_x=batch_x)
+        train_data_X, train_data_y_name, encode_y_name = load_data(batch_x=batch_x)
         # pickle dump data
         # with open('pickle/train_data.pickle', 'wb')as f:
         #     pickle.dump((train_data_X, train_data_y_name, train_data_y_time), f, -1)
-    return train_data_X, train_data_y_name, train_data_y_time, encode_y_name
+    return train_data_X, train_data_y_name, encode_y_name
 
 
 def load_data_test():
@@ -565,26 +521,24 @@ def train(cnn, data_test):
         for step, data in enumerate(train_loader, 0):  # gives batch data, normalize x when iterate train_loader
             # while data is not None:
             # print(step, len(data))
-            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = data
-            train_data_x, train_data_y_name, train_data_y_time, encode_y_name = \
-                train_data_x.to(device), train_data_y_name.to(device), train_data_y_time.to(device), encode_y_name.to(
-                    device)
+            train_data_x, train_data_y_name, encode_y_name = data
+            train_data_x, train_data_y_name, encode_y_name = \
+                train_data_x.to(device), train_data_y_name.to(device), encode_y_name.to(device)
 
             batch_size = len(train_data_x)
             # try:
-            b_x = train_data_x.view(batch_size, 1, 128, 17)
+            b_x = train_data_x.view(batch_size, 1, 128, 32)
             output = cnn(b_x)  # cnn output
             #  MSELoss
             loss1 = loss_func(output[0], train_data_y_name.view(batch_size, -1))
             # similarity, words = torch.topk(torch.mv(embedding.weight, output[0][0].clone()), 5)
-            loss2 = loss_func(output[1].view(batch_size, 64), train_data_y_time)
-            loss = loss1 + loss2
+            loss = loss1
 
             optimizer.zero_grad()  # clear gradients for this training step
             loss.backward()  # backpropagation, compute gradients
             optimizer.step()  # apply gradients
             # if step % 50 == 0:
-            print(step, loss1, loss2, loss)
+            print(step, loss1, loss)
             # print(step, loss1, loss2, loss, file=log_f)
             # except Exception , err :
             #     print(err)
@@ -615,7 +569,7 @@ if __name__ == '__main__':
         print("加载预训练模块")
         cnn = torch.load(module_path)
     else:
-        cnn = NetAY()
+        cnn = NetAY_name_only()
     # cnn.share_memory()
     print(cnn)
     train(cnn, data_test)

@@ -4,7 +4,7 @@ import torch
 from sklearn import preprocessing
 
 
-embedding = nn.Embedding(728, 8)
+embedding = nn.Embedding(728, 63)
 col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 
 train_f = "data/data_test_2_sort_5w.csv"
@@ -21,7 +21,7 @@ def data_encode(train_data_X):
         le.fit(train_data_X[name])
         x_les.append(le)
         train_data_X[name] = le.transform(train_data_X[name])
-    print(train_data_X.head(140), train_data_X.shape)
+    print(train_data_X.head(10), train_data_X.shape)
     return train_data_X
 
 
@@ -53,7 +53,7 @@ def load_data(data_type='train'):
 
 if __name__ == '__main__':
     dev_name_embedding = load_data()
+    for i in range(10) :
+        similarity, words = torch.topk(torch.mv(embedding.weight, dev_name_embedding[i].clone()), 5)
 
-    similarity, words = torch.topk(torch.mv(embedding.weight, dev_name_embedding[0].clone()), 5)
-
-    print(similarity, words)
+        print( words,similarity)
