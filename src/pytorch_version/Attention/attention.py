@@ -70,7 +70,7 @@ def evaluate(model, iterator, criterion):
     model.eval()
 
     epoch_loss = 0
-    data_loader = DataLoader(dataset=iterator, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, drop_last=True)
+    data_loader = DataLoader(dataset=iterator, batch_size=12, shuffle=True, pin_memory=True, drop_last=True)
 
     with torch.no_grad():
         for i, batch in enumerate(data_loader):
@@ -111,13 +111,14 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=2):
     while step < len(train_data_set):
         tmp.append(train_data_set[step])
         step += 1
-        if step % batch_x == 0:
+        if len(tmp) % batch_x == 0:
             print("组装中：", step)
             group_data.append(tmp)
-        if step % (batch_y + batch_x) == 0:
-            group_data_y.append(tmp[batch_y * -1])
+        if len(tmp) % (batch_y + batch_x) == 0:
+            group_data_y.append(tmp[batch_y * -1:])
             tmp = []
-            step = current_i + step_i
+            current_i = current_i + step_i
+            step = current_i
     group_data = group_data.pop(-1)
     return group_data, group_data_y
 
