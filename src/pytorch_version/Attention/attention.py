@@ -112,6 +112,7 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=2):
         tmp.append(train_data_set[step])
         step += 1
         if step % batch_x == 0:
+            print("组装中：", step)
             group_data.append(tmp)
         if step % (batch_y + batch_x) == 0:
             group_data_y.append(tmp[batch_y * -1])
@@ -141,10 +142,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 BATCH_SIZE = 128
 data_group_save_path = os.path.join('pickle', 'group_data.pickle')
 
-with open ('../pickle/name_pickle','rb') as f:
+with open('../pickle/name_pickle', 'rb') as f:
     train_x = pickle.load(f)
 
-m_data = split_data_set(train_x,64,32)
+m_data = split_data_set(train_x, 64, 32)
 
 data_set_train = M_Test_data(m_data)
 
@@ -161,9 +162,6 @@ output_dim = input_dim
 
 dec = Decoder(output_dim, hid_dim, n_layers, n_heads, pf_dim, DecoderLayer, SelfAttention, PositionwiseFeedforward,
               dropout, device)
-
-
-
 
 model = Seq2Seq(enc, dec, 0, device).to(device)
 
