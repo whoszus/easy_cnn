@@ -2,6 +2,7 @@ import torch.nn as nn
 import pandas as pd
 import torch
 from sklearn import preprocessing
+import pickle
 
 
 embedding = nn.Embedding(728, 16)
@@ -21,6 +22,8 @@ def data_encode(train_data_X):
         le.fit(train_data_X[name])
         x_les.append(le)
         train_data_X[name] = le.transform(train_data_X[name])
+        with open ('pickle/name_pickle','wb') as f:
+            pickle.dump(train_data_X[name],f,-1)
     print(train_data_X.head(10), train_data_X.shape)
     return train_data_X
 
