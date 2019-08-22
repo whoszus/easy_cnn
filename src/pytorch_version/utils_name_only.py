@@ -1,6 +1,5 @@
 # coding=utf-8
 # -*w- coding utf-8 -*-
-
 import pandas as pd
 from sklearn import preprocessing
 import pickle
@@ -39,7 +38,7 @@ verison = 'm_1006_5w_'
 # GPU = torch.cuda.is_available()
 GPU = False
 
-embedding = nn.Embedding(728, 32)
+embedding = nn.Embedding(728, 16)
 
 test_pickle_name = 'pickle/test_data.pickle'
 
@@ -256,7 +255,7 @@ def time_split(train_data_x, batch_x):
 
 def embedd(input_data_x, type='dev_name'):
     if type == 'dev_name':
-        output_x = embedding(torch.tensor(input_data_x, dtype=torch.long))
+        output_x = embedding(input_data_x.clone().detach().requires_grad_(True))
         # todo save embedding entiy
         # else:
         # output_x = embedding_time(input_data_x)
@@ -387,9 +386,9 @@ def pickle_loader(input):
     return item
 
 
-def acy(module, test_data_x, encode_y_name, step, epoch, best_n, best_t):
-    test_output = module(test_data_x.view(1, 1, 128, 32))
-    name_res = test_output[0].view(64, 32)
+def acy(module, test_data_x, encode_y_name, step, epoch, best_n):
+    test_output = module(test_data_x.view(1, 1, 128, 16))
+    name_res = test_output[0].view(64, 16)
     # time_res = test_output[1].view(64)
 
     result_n = []
@@ -430,7 +429,7 @@ def get_accuracy_tiny(cnnt, epoch, data_test):
     try:
         while step < test_data_set.len:
             test_data_x, test_data_y_name, encode_y_name = test_data_set.__getitem__(step)
-            best_n, best_t = acy(module, test_data_x, encode_y_name, step, epoch, best_n, best_t)
+            best_n = acy(module, test_data_x, encode_y_name, step, epoch, best_n)
             step += 1
     except Exception as e:
         print(repr(e))
@@ -528,7 +527,7 @@ def train(cnn, data_test):
 
             batch_size = len(train_data_x)
             # try:
-            b_x = train_data_x.view(batch_size, 1, 128, 32)
+            b_x = train_data_x.view(batch_size, 1, 128, 16)
             output = cnn(b_x)  # cnn output
             #  MSELoss
             loss1 = loss_func(output[0], train_data_y_name.view(batch_size, -1))
@@ -544,11 +543,11 @@ def train(cnn, data_test):
             # except Exception , err :
             #     print(err)
             #     print(train_data_x.shape)
-            if (step + 1) % 100 == 0:
-                thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1",
-                                           args=(cnn, epoch, data_test))
-                # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
-                thread1.start()
+            # if (step + 1) % 100 == 0:
+            thread1 = threading.Thread(target=get_accuracy_tiny, name="准确率线程1",
+                                       args=(cnn, epoch, data_test))
+            # get_accuracy_tiny(cnn.to(device_cpu), epoch, data_test)
+            thread1.start()
             # step += 1
             # data = prefetcher.next()
 

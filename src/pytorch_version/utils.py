@@ -36,8 +36,8 @@ batch_x = 128
 batch_y = 64
 verison = 'm_1006_5w_'
 
-GPU = torch.cuda.is_available()
-# GPU = False
+# GPU = torch.cuda.is_available()
+GPU = False
 embedding = nn.Embedding(728, 16)
 
 test_pickle_name = 'pickle/test_data.pickle'

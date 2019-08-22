@@ -57,7 +57,7 @@ class NetAY(nn.Module):
             nn.ReLU(),
             Flatten(),
             # embedding = nn.Embedding(500, batch_y) 如果修改此处，batch_y要对应修改
-            nn.Linear(64 * 128 * 32, 64 * 32),
+            nn.Linear(64 * 128 * 17, 64 * 17),
             # nn.LogSoftmax(dim=1)
         )
         self.out_2 = nn.Sequential(
@@ -104,7 +104,7 @@ class NetAY_name_only(nn.Module):
             nn.ReLU(),
             Flatten(),
             # embedding = nn.Embedding(500, batch_y) 如果修改此处，batch_y要对应修改
-            nn.Linear(64 * 128 * 32, 64 * 32),
+            nn.Linear(64 * 128 * 16, 64 * 16),
             # nn.LogSoftmax(dim=1)
         )
 

@@ -4,7 +4,7 @@ import torch
 from sklearn import preprocessing
 
 
-embedding = nn.Embedding(728, 63)
+embedding = nn.Embedding(728, 16)
 col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 
 train_f = "data/data_test_2_sort_5w.csv"
@@ -54,6 +54,7 @@ def load_data(data_type='train'):
 if __name__ == '__main__':
     dev_name_embedding = load_data()
     for i in range(10) :
+        print(dev_name_embedding[0].clone())
         similarity, words = torch.topk(torch.mv(embedding.weight, dev_name_embedding[i].clone()), 5)
 
         print( words,similarity)
