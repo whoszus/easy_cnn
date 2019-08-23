@@ -12,6 +12,8 @@ import pickle
 
 from DATA_SET import M_Test_data
 
+import numpy as np
+
 
 # def tokenize_de(text):
 #     """
@@ -35,26 +37,26 @@ def train(model, iterator, optimizer, criterion, clip):
     model.train()
 
     epoch_loss = 0
-    data_loader = DataLoader(dataset=iterator, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, drop_last=True)
-    for i, batch in enumerate(data_loader):
-        src = batch.src
-        trg = batch.trg
+    data_loader_train = DataLoader(dataset=iterator, batch_size=12, shuffle=True, pin_memory=True, drop_last=True)
+    for i, batch in enumerate(data_loader_train):
+        src = batch[0]
+        trg = batch[1]
 
         optimizer.optimizer.zero_grad()
 
-        output = model(src, trg[:, :-1])
+        output = model(src, trg)
 
         # output = [batch size, trg sent len - 1, output dim]
         # trg = [batch size, trg sent len]
 
         output = output.contiguous().view(-1, output.shape[-1])
-        trg = trg[:, 1:].contiguous().view(-1)
+        # trg = trg[:, 1:].contiguous().view(-1)
 
         # output = [batch size * trg sent len - 1, output dim]
         # trg = [batch size * trg sent len - 1]
 
-        loss = criterion(output, trg)
-
+        loss = criterion(output, trg.view(-1))
+        print(loss)
         loss.backward()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
@@ -74,21 +76,21 @@ def evaluate(model, iterator, criterion):
 
     with torch.no_grad():
         for i, batch in enumerate(data_loader):
-            src = batch.src
-            trg = batch.trg
+            src = batch[0]
+            trg = batch[1]
 
-            output = model(src, trg[:, :-1])
+            output = model(src, trg)
 
             # output = [batch size, trg sent len - 1, output dim]
             # trg = [batch size, trg sent len]
 
             output = output.contiguous().view(-1, output.shape[-1])
-            trg = trg[:, 1:].contiguous().view(-1)
+            # trg = trg[:, 1:].contiguous().view(-1)
 
             # output = [batch size * trg sent len - 1, output dim]
             # trg = [batch size * trg sent len - 1]
 
-            loss = criterion(output, trg)
+            loss = criterion(output, trg.view(-1))
 
             epoch_loss += loss.item()
 
@@ -102,7 +104,7 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 
-def split_data_set(train_data_set, batch_x, batch_y, step_i=2):
+def split_data_set(train_data_set, batch_x, batch_y, step_i=32):
     current_i = 1
     step = 0
     tmp = []
@@ -113,13 +115,13 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=2):
         step += 1
         if len(tmp) % batch_x == 0:
             print("组装中：", step)
-            group_data.append(tmp)
+            group_data.append(torch.tensor(np.array(tmp), dtype=torch.long))
         if len(tmp) % (batch_y + batch_x) == 0:
-            group_data_y.append(tmp[batch_y * -1:])
+            group_data_y.append(torch.tensor(np.array(tmp[batch_y * -1:]), dtype=torch.long))
             tmp = []
             current_i = current_i + step_i
             step = current_i
-    group_data = group_data.pop(-1)
+    group_data.pop(-1)
     return group_data, group_data_y
 
 
