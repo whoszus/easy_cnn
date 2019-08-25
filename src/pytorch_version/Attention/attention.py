@@ -11,6 +11,16 @@ import pickle
 from DATA_SET import M_Test_data
 import numpy as np
 
+SAVE_DIR = 'models'
+MODEL_SAVE_PATH = os.path.join(SAVE_DIR, 't.pt')
+SEED = 1
+random.seed(SEED)
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+BATCH_SIZE = 128
+data_group_save_path = os.path.join('pickle', 'group_data.pickle')
+
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -28,11 +38,12 @@ def train(model, iterator, optimizer, criterion, clip):
             optimizer.optimizer.zero_grad()
 
             output = model(src, trg)
-
             # output = [batch size, trg sent len - 1, output dim]
             # trg = [batch size, trg sent len]
-
+            # model
             output = output.contiguous().view(-1, output.shape[-1])
+
+            model.decoder()
             # trg = trg[:, 1:].contiguous().view(-1)
 
             # output = [batch size * trg sent len - 1, output dim]
@@ -64,6 +75,9 @@ def evaluate(model, data_set_evaluate, criterion):
             trg = batch[1]
             if trg.shape[0] == 12:
                 output = model(src, trg)
+
+                model.decoder()
+
 
                 # output = [batch size, trg sent len - 1, output dim]
                 # trg = [batch size, trg sent len]
@@ -136,19 +150,11 @@ def train_module():
             f' Val.PPL: {math.exp(valid_loss): 7.3f} | ')
 
 
-SAVE_DIR = 'models'
-SEED = 1
-random.seed(SEED)
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = True
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 128
-data_group_save_path = os.path.join('pickle', 'group_data.pickle')
 with open('../pickle/name_pickle', 'rb') as f:
     train_x = pickle.load(f)
 m_data = split_data_set(train_x, 64, 32)
 data_set_train = M_Test_data(m_data)
-input_dim = len(train_x)
+input_dim = 728
 hid_dim = 512
 n_layers = 6
 n_heads = 8
@@ -167,9 +173,8 @@ for p in model.parameters():
 N_EPOCHS = 10
 CLIP = 1
 train_module()
-
-MODEL_SAVE_PATH = os.path.join(SAVE_DIR, 'transformer-seq2seq.pt')
 model.load_state_dict(torch.load(MODEL_SAVE_PATH))
+
 print(f'The model has {count_parameters(model):,} trainable parameters')
 
 data_loader = DataLoader(data_set_train, batch_size=1, shuffle=True, pin_memory=True, drop_last=True)
