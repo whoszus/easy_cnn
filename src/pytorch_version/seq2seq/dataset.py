@@ -4,11 +4,13 @@ import torch.utils.data
 
 from transformer import Constants
 
+
 def paired_collate_fn(insts):
     src_insts, tgt_insts = list(zip(*insts))
     src_insts = collate_fn(src_insts)
     tgt_insts = collate_fn(tgt_insts)
     return (*src_insts, *tgt_insts)
+
 
 def collate_fn(insts):
     ''' Pad the instance to the max seq length in batch '''
@@ -20,7 +22,7 @@ def collate_fn(insts):
         for inst in insts])
 
     batch_pos = np.array([
-        [pos_i+1 if w_i != Constants.PAD else 0
+        [pos_i + 1 if w_i != Constants.PAD else 0
          for pos_i, w_i in enumerate(inst)] for inst in batch_seq])
 
     batch_seq = torch.LongTensor(batch_seq)
@@ -28,20 +30,20 @@ def collate_fn(insts):
 
     return batch_seq, batch_pos
 
+
 class TranslationDataset(torch.utils.data.Dataset):
     def __init__(
-        self, src_word2idx, tgt_word2idx,
-        src_insts=None, tgt_insts=None):
-
+            self, src_word2idx, tgt_word2idx,
+            src_insts=None, tgt_insts=None):
         assert src_insts
         assert not tgt_insts or (len(src_insts) == len(tgt_insts))
 
-        src_idx2word = {idx:word for word, idx in src_word2idx.items()}
+        src_idx2word = {idx: word for word, idx in src_word2idx.items()}
         self._src_word2idx = src_word2idx
         self._src_idx2word = src_idx2word
         self._src_insts = src_insts
 
-        tgt_idx2word = {idx:word for word, idx in tgt_word2idx.items()}
+        tgt_idx2word = {idx: word for word, idx in tgt_word2idx.items()}
         self._tgt_word2idx = tgt_word2idx
         self._tgt_idx2word = tgt_idx2word
         self._tgt_insts = tgt_insts
@@ -88,3 +90,23 @@ class TranslationDataset(torch.utils.data.Dataset):
         if self._tgt_insts:
             return self._src_insts[idx], self._tgt_insts[idx]
         return self._src_insts[idx]
+
+
+class M_Test_data(torch.utils.data.Dataset):
+    """ my dataset."""
+
+    # Initialize your data, download, etc.
+    def __init__(self, m_data):
+        train_data_x, train_data_y = m_data
+        self.train_data_x = train_data_x
+        self.train_data_y = train_data_y
+        self.len = len(self.train_data_x)
+
+    def __getitem__(self, index):
+        # 根据索引返回数据和对应的标签
+        return self.train_data_x[index], \
+               self.train_data_y[index]
+
+    def __len__(self):
+        # 返回文件数据的数目
+        return self.len

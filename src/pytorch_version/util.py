@@ -22,8 +22,12 @@ def data_encode(train_data_X):
         le.fit(train_data_X[name])
         x_les.append(le)
         train_data_X[name] = le.transform(train_data_X[name])
-        with open('pickle/name_pickle', 'wb') as f:
-            pickle.dump(train_data_X[name], f, -1)
+        # with open('pickle/name_val.pt', 'wb') as f:
+        #     pickle.dump(train_data_X[name], f, -1)
+        data = {
+            'data':train_data_X[name]
+        }
+        torch.save(data,'pickle/name_val.pt')
     print(train_data_X.head(10), train_data_X.shape)
     return train_data_X
 
@@ -54,7 +58,7 @@ def load_data(data_type='train'):
 
 
 if __name__ == '__main__':
-    dev_name_embedding = load_data()
+    dev_name_embedding = load_data('de')
     # for i in range(10) :
     #     print(dev_name_embedding[0].clone())
     #     similarity, words = torch.topk(torch.mv(embedding.weight, dev_name_embedding[i].clone()), 5)
