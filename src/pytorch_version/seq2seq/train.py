@@ -16,6 +16,9 @@ from dataset import M_Test_data, paired_collate_fn
 from transformer.Models import Transformer
 from transformer.Optim import ScheduledOptim
 import numpy as np
+import os
+
+device = torch.device('cuda0' if torch.cuda.is_available() else 'cpu')
 
 
 def cal_performance(pred, gold, smoothing=False):
@@ -67,15 +70,18 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
             training_data, mininterval=2,
             desc='  - (Training)   ', leave=False):
         # prepare data
-        src_seq, src_pos, tgt_seq, tgt_pos = map(lambda x: x.to(device), batch)
-        gold = tgt_seq[:, 1:]
+        src_seq, tgt_seq = map(lambda x: x.to(device), batch)
+        #
+        src_pos = torch.tensor(get_position(src_seq.shape[1])).to(device)
+        tgt_pos = torch.tensor(get_position(tgt_seq.shape[1])).to(device)
+        # gold = tgt_seq[:, 1:]
 
         # forward
         optimizer.zero_grad()
         pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
 
         # backward
-        loss, n_correct = cal_performance(pred, gold, smoothing=smoothing)
+        loss, n_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
         loss.backward()
 
         # update parameters
@@ -84,7 +90,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         # note keeping
         total_loss += loss.item()
 
-        non_pad_mask = gold.ne(Constants.PAD)
+        non_pad_mask = tgt_seq.ne(Constants.PAD)
         n_word = non_pad_mask.sum().item()
         n_word_total += n_word
         n_word_correct += n_correct
@@ -92,6 +98,13 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
     return loss_per_word, accuracy
+
+
+def get_position(ranges):
+    pos = []
+    for i in range(ranges):
+        pos.append(i)
+    return pos
 
 
 def eval_epoch(model, validation_data, device):
@@ -108,17 +121,18 @@ def eval_epoch(model, validation_data, device):
                 validation_data, mininterval=2,
                 desc='  - (Validation) ', leave=False):
             # prepare data
-            src_seq, src_pos, tgt_seq, tgt_pos = map(lambda x: x.to(device), batch)
-            gold = tgt_seq[:, 1:]
-
+            src_seq, tgt_seq = map(lambda x: x.to(device), batch)
+            # gold = tgt_seq[:, 1:]
+            src_pos = torch.tensor(get_position(src_seq.shape[1])).to(device)
+            tgt_pos = torch.tensor(get_position(tgt_seq.shape[1])).to(device)
             # forward
             pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
-            loss, n_correct = cal_performance(pred, gold, smoothing=False)
+            loss, n_correct = cal_performance(pred, tgt_seq, smoothing=False)
 
             # note keeping
             total_loss += loss.item()
 
-            non_pad_mask = gold.ne(Constants.PAD)
+            non_pad_mask = tgt_seq.ne(Constants.PAD)
             n_word = non_pad_mask.sum().item()
             n_word_total += n_word
             n_word_correct += n_correct
@@ -197,6 +211,7 @@ def main():
 
     parser.add_argument('-data_train', default='data/name_train.pt')
     parser.add_argument('-data_val', default='data/name_val.pt')
+    parser.add_argument('-data_set', default='data/data_set.pt')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -222,7 +237,7 @@ def main():
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-label_smoothing', action='store_true')
     parser.add_argument('-batch_x', default=64)
-    parser.add_argument('-batch_y', default=64)
+    parser.add_argument('-batch_y', default=32)
 
     opt = parser.parse_args()
     opt.cuda = torch.cuda.is_available()
@@ -243,7 +258,6 @@ def main():
 
     print(opt)
 
-    device = torch.device('cuda0' if torch.cuda.is_available() else 'cpu')
     transformer = Transformer(
         opt.src_vocab_size,
         opt.tgt_vocab_size,
@@ -279,29 +293,38 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
         step += 1
         if len(tmp) % batch_x == 0:
             print("组装中：", step)
-            group_data.append(torch.tensor(np.array(tmp), dtype=torch.long))
+            group_data.append(np.array(tmp))
         if len(tmp) % (batch_y + batch_x) == 0:
-            group_data_y.append(torch.tensor(np.array(tmp[batch_y * -1:]), dtype=torch.long))
+            group_data_y.append(np.array(tmp[batch_y * -1:]))
             tmp = []
             current_i = current_i + step_i
             step = current_i
     group_data.pop(-1)
-    return group_data, group_data_y
+    return torch.tensor(group_data).to(device), torch.tensor(group_data_y).to(device)
 
 
 def get_data_loader(opt):
-    data_train = torch.load(opt.data_train)['data']
-    m_data = split_data_set(data_train, opt.batch_x, opt.batch_y)
-    data_set_train = M_Test_data(m_data)
-    data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True, pin_memory=True,
-                                              drop_last=True)
+    if os.path.exists(opt.data_set):
+        data_loader = torch.load(opt.data_set)['train']
+        data_loader_val = torch.load(opt.data_set)['val']
+    else:
+        data_train = torch.load(opt.data_train)['data']
+        m_data = split_data_set(data_train, opt.batch_x, opt.batch_y)
+        data_set_train = M_Test_data(m_data)
+        data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True,
+                                                  pin_memory=True,
+                                                  drop_last=True)
+        data_val = torch.load(opt.data_val)['data']
+        m_data = split_data_set(data_val, opt.batch_x, opt.batch_y)
+        data_set_val = M_Test_data(m_data)
+        data_loader_val = torch.utils.data.DataLoader(data_set_val, batch_size=opt.batch_size, shuffle=True,
+                                                      pin_memory=True, drop_last=True)
 
-    data_val = torch.load(opt.data_val)['data']
-    m_data = split_data_set(data_val, opt.batch_x, opt.batch_y)
-    data_set_val = M_Test_data(m_data)
-    data_loader_val = torch.utils.data.DataLoader(data_set_val, batch_size=opt.batch_size, shuffle=True,
-                                                  pin_memory=True, drop_last=True)
-
+        data_loader_p = {
+            'train': data_loader,
+            'val': data_loader_val
+        }
+        torch.save(data_loader_p, opt.data_set)
     return data_loader, data_loader_val
 
 
