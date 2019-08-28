@@ -8,7 +8,7 @@ embedding = nn.Embedding(728, 16)
 col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 
 train_f = "data/data_train_2_sort_5w.csv"
-test_f = "data/data_test_2_sort_5w.csv"
+test_f = "./data/data_test_2_sort_5w.csv"
 
 
 # log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')

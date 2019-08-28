@@ -253,9 +253,10 @@ def main():
     opt.src_vocab_size = 728
     opt.tgt_vocab_size = 728
     if opt.train_type == 'time':
-        opt.tgt_vocab_size = get_time_vac(opt)
+        voc = get_time_vac(opt)
+        opt.tgt_vocab_size = voc if voc > 500 else 728
 
-    # ========= Preparing Model =========#
+        # ========= Preparing Model =========#
     if opt.embs_share_weight:
         assert opt.src_vocab_size == opt.tgt_vocab_size, \
             'The src/tgt word2idx table are different but asked to share word embedding.'
@@ -310,7 +311,7 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
 
 
 # 将时间处理成时间间隔
-def time_split(train_data_time, batch_x, batch_y, step_i=12):
+def time_split_group(train_data_time, batch_x, batch_y, step_i=12):
     tmp = []
     current_i = 1
     group_data = []
@@ -342,6 +343,21 @@ def time_split(train_data_time, batch_x, batch_y, step_i=12):
     return torch.tensor(group_data).to(device), torch.tensor(group_data_y).to(device)
 
 
+# 将时间处理成时间间隔
+def time_split(train_data_time):
+    c_time = train_data_time
+    r_time = []
+    for index, value in c_time.iteritems():
+        if index == 0:
+            r_time.append(5)
+        else:
+            get_sec = lambda x, y: (x - y).seconds if x > y else (y - x).seconds
+            seconds = get_sec(c_time[index], c_time[index - 1])
+            # seconds = seconds if seconds > 1 else 5
+            r_time.append(seconds + 5)
+    return r_time
+
+
 def get_data_loader(opt):
     if os.path.exists(opt.data_set):
         data_loader = torch.load(opt.data_set)['train']
@@ -363,7 +379,9 @@ def get_data_loader(opt):
 
         # 创建 网元-时间 训练集
         train_data = torch.load(opt.data_all)['train_data']['time']
-        train_time_x, train_time_y = time_split(train_data, opt.batch_x, opt.batch_y)
+        # train_time_x, train_time_y = time_split_group(train_data, opt.batch_x, opt.batch_y)
+        train_data = split_data_set(train_data, opt.batch_x, opt.batch_y)
+        train_time_x, train_time_y = split_data_set(train_data, opt.batch_x, opt.batch_y)
         train_name_x, train_name_y = m_data
         m_data_time = train_name_x, train_time_y
         data_set_time = M_Test_data(m_data_time)
@@ -371,7 +389,9 @@ def get_data_loader(opt):
                                                         pin_memory=True, drop_last=True)
 
         # 创建 网元-时间 测试集
-        val_time_x, val_time_y = time_split(torch.load(opt.data_all)['val_data']['time'], opt.batch_x, opt.batch_y)
+        # val_time_x, val_time_y = time_split_group(torch.load(opt.data_all)['val_data']['time'], opt.batch_x, opt.batch_y)
+        val_time = time_split(torch.load(opt.data_all)['val_data']['time'])
+        val_time_x, val_time_y = split_data_set(val_time, opt.batch_x, opt.batch_y)
         val_name_x, val_name_y = m_data_val
         m_data_time = val_name_x, val_time_y
         data_set_time = M_Test_data(m_data_time)
@@ -390,8 +410,10 @@ def get_data_loader(opt):
 
 def get_time_vac(opt):
     train_data = torch.load(opt.data_all)['train_data']['time']
-    train_data_x, train_data_y = time_split(train_data, opt.batch_x, opt.batch_y)
-    train_data_y = train_data_y.flatten(0).numpy()
+    # train_data_x, train_data_y = time_split_group(train_data, opt.batch_x, opt.batch_y)
+    train_data_y = time_split(train_data)
+    # train_data_y = train_data_y.flatten(0).numpy()
+    train_data_y = np.array(train_data_y)
     size = np.unique(train_data_y).size
     return size
 
