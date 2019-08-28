@@ -2,13 +2,13 @@ import torch.nn as nn
 import pandas as pd
 import torch
 from sklearn import preprocessing
-import pickle
+import time
 
 embedding = nn.Embedding(728, 16)
 col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 
 train_f = "data/data_train_2_sort_5w.csv"
-test_f = "./data/data_test_2_sort_5w.csv"
+test_f = "data/data_test_2_sort_5w.csv"
 
 
 # log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')
@@ -18,16 +18,11 @@ def data_encode(train_data_X):
     print("开始转换数据格式》...")
     x_les = []
     for name in col_names:
-        le = preprocessing.LabelEncoder()
-        le.fit(train_data_X[name])
-        x_les.append(le)
-        train_data_X[name] = le.transform(train_data_X[name])
-        # with open('pickle/name_val.pt', 'wb') as f:
-        #     pickle.dump(train_data_X[name], f, -1)
-        data = {
-            'data':train_data_X[name]
-        }
-        # torch.save(data,'pickle/name_val.pt')
+        if name != 'time':
+            le = preprocessing.LabelEncoder()
+            le.fit(train_data_X[name])
+            x_les.append(le)
+            train_data_X[name] = le.transform(train_data_X[name])
     print(train_data_X.head(10), train_data_X.shape)
     return train_data_X
 
@@ -44,21 +39,28 @@ def load_csv_data(file):
 
 # 加载数据
 def load_data(data_type='train'):
-    if data_type == 'train':
-        print("开始加载数据.....")
-        data = load_csv_data(train_f)
-    else:
-        print("进行测试.....")
-        data = load_csv_data(test_f)
+    print("开始加载数据.....")
+    data_train = load_csv_data(train_f)
+    print("进行测试.....")
+    data_val = load_csv_data(test_f)
     # 按时间切分
-    data = data_encode(data)
-    dev_name = data['dev_name']
-    dev_name_embedding = embedding(torch.tensor(dev_name.values,dtype=torch.long))
-    return dev_name_embedding
+    data_train = data_encode(data_train)
+    data_val = data_encode(data_val)
+
+    data = {
+        'train_data':data_train,
+        'val_data':data_val
+    }
+    torch.save(data, 'pickle/data.pt')
+    print(data)
+    return
+
+
+
 
 
 if __name__ == '__main__':
-    dev_name_embedding = load_data('de')
+    dev_name_embedding = load_data()
     # for i in range(10) :
     #     print(dev_name_embedding[0].clone())
     #     similarity, words = torch.topk(torch.mv(embedding.weight, dev_name_embedding[i].clone()), 5)

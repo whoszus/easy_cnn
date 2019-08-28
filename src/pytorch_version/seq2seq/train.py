@@ -211,7 +211,8 @@ def main():
 
     parser.add_argument('-data_train', default='data/name_train.pt')
     parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_set', default='data/data_set.pt')
+    parser.add_argument('-data_all', default='data/data.pt')
+    parser.add_argument('-data_set', default='data/data_set_error.pt')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -238,6 +239,7 @@ def main():
     parser.add_argument('-label_smoothing', action='store_true')
     parser.add_argument('-batch_x', default=64)
     parser.add_argument('-batch_y', default=32)
+    parser.add_argument('-train_type', default='time')
 
     opt = parser.parse_args()
     opt.cuda = torch.cuda.is_available()
@@ -246,12 +248,15 @@ def main():
     # ========= Loading Dataset =========#
     # opt.max_token_seq_len = data['settings'].max_token_seq_len
 
-    training_data, validation_data = get_data_loader(opt)
+    training_data, validation_data, train_time, val_time = get_data_loader(opt)
 
     opt.src_vocab_size = 728
     opt.tgt_vocab_size = 728
+    if opt.train_type == 'time':
+        opt.tgt_vocab_size = get_time_vac(opt)
 
-    # ========= Preparing Model =========#
+
+# ========= Preparing Model =========#
     if opt.embs_share_weight:
         assert opt.src_vocab_size == opt.tgt_vocab_size, \
             'The src/tgt word2idx table are different but asked to share word embedding.'
@@ -278,8 +283,10 @@ def main():
             filter(lambda x: x.requires_grad, transformer.parameters()),
             betas=(0.9, 0.98), eps=1e-09),
         opt.d_model, opt.n_warmup_steps)
-
-    train(transformer, training_data, validation_data, optimizer, device, opt)
+    if opt.train_type == 'name':
+        train(transformer, training_data, validation_data, optimizer, device, opt)
+    else:
+        train(transformer, train_time, val_time, optimizer, device, opt)
 
 
 def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
@@ -303,29 +310,73 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
     return torch.tensor(group_data).to(device), torch.tensor(group_data_y).to(device)
 
 
+# 将时间处理成时间间隔
+def time_split(train_data_time):
+    c_time = train_data_time
+    r_time = []
+    for index, value in c_time.iteritems():
+        if index == 0:
+            r_time.append(0)
+        else:
+            get_sec = lambda x, y: (x - y).seconds if x > y else (y - x).seconds
+            seconds = get_sec(c_time[index], c_time[index - 1])
+            r_time.append(seconds)
+    return r_time
+
+
 def get_data_loader(opt):
     if os.path.exists(opt.data_set):
         data_loader = torch.load(opt.data_set)['train']
         data_loader_val = torch.load(opt.data_set)['val']
+        train_loader_time = torch.load(opt.data_set)['time']
+        val_loader_time = torch.load(opt.data_set)['val_time']
     else:
-        data_train = torch.load(opt.data_train)['data']
+        data_train = torch.load(opt.data_all)['train_data']['dev_name']
         m_data = split_data_set(data_train, opt.batch_x, opt.batch_y)
         data_set_train = M_Test_data(m_data)
         data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True,
                                                   pin_memory=True,
                                                   drop_last=True)
-        data_val = torch.load(opt.data_val)['data']
-        m_data = split_data_set(data_val, opt.batch_x, opt.batch_y)
-        data_set_val = M_Test_data(m_data)
+        data_val = torch.load(opt.data_all)['val_data']['dev_name']
+        m_data_val = split_data_set(data_val, opt.batch_x, opt.batch_y)
+        data_set_val = M_Test_data(m_data_val)
         data_loader_val = torch.utils.data.DataLoader(data_set_val, batch_size=opt.batch_size, shuffle=True,
+                                                      pin_memory=True, drop_last=True)
+
+        # 创建 网元-时间 训练集
+        train_data = torch.load(opt.data_all)['train_data']['time']
+        data_time = time_split(train_data)
+        train_time_x, train_time_y = split_data_set(data_time, opt.batch_x, opt.batch_y)
+        train_name_x, train_name_y = m_data
+        m_data_time = train_name_x, train_time_y
+        data_set_time = M_Test_data(m_data_time)
+        train_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
+                                                        pin_memory=True, drop_last=True)
+
+        # 创建 网元-时间 测试集
+        val_data_time = time_split(torch.load(opt.data_all)['val_data']['time'])
+        val_time_x, val_time_y = split_data_set(val_data_time, opt.batch_x, opt.batch_y)
+        val_name_x, val_name_y = m_data_val
+
+        m_data_time = val_name_x, val_time_y
+        data_set_time = M_Test_data(m_data_time)
+        val_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
                                                       pin_memory=True, drop_last=True)
 
         data_loader_p = {
             'train': data_loader,
-            'val': data_loader_val
+            'val': data_loader_val,
+            'time': train_loader_time,
+            'val_time': val_loader_time
         }
         torch.save(data_loader_p, opt.data_set)
-    return data_loader, data_loader_val
+    return data_loader, data_loader_val, train_loader_time, val_loader_time
+
+def get_time_vac(opt):
+    train_data = torch.load(opt.data_all)['train_data']['time']
+    train_data = time_split(train_data)
+    size = np.unique(np.array(train_data)).size
+    return size
 
 
 if __name__ == '__main__':
