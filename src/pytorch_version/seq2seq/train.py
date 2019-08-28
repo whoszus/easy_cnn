@@ -212,7 +212,7 @@ def main():
     parser.add_argument('-data_train', default='data/name_train.pt')
     parser.add_argument('-data_val', default='data/name_val.pt')
     parser.add_argument('-data_all', default='data/data.pt')
-    parser.add_argument('-data_set', default='data/data_set_error.pt')
+    parser.add_argument('-data_set', default='data/data_set.pt')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -255,8 +255,7 @@ def main():
     if opt.train_type == 'time':
         opt.tgt_vocab_size = get_time_vac(opt)
 
-
-# ========= Preparing Model =========#
+    # ========= Preparing Model =========#
     if opt.embs_share_weight:
         assert opt.src_vocab_size == opt.tgt_vocab_size, \
             'The src/tgt word2idx table are different but asked to share word embedding.'
@@ -311,17 +310,36 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
 
 
 # 将时间处理成时间间隔
-def time_split(train_data_time):
-    c_time = train_data_time
-    r_time = []
-    for index, value in c_time.iteritems():
-        if index == 0:
-            r_time.append(0)
-        else:
-            get_sec = lambda x, y: (x - y).seconds if x > y else (y - x).seconds
-            seconds = get_sec(c_time[index], c_time[index - 1])
-            r_time.append(seconds)
-    return r_time
+def time_split(train_data_time, batch_x, batch_y, step_i=12):
+    tmp = []
+    current_i = 1
+    group_data = []
+    group_data_y = []
+    step = 0
+    first_time = train_data_time[0]
+    get_sec = lambda x, y: (x - y).seconds if x > y else (y - x).seconds
+
+    while step < len(train_data_time):
+        if step == 0:
+            tmp.append(0)
+            step += 1
+            continue
+        seconds = get_sec(train_data_time[step], first_time)
+        tmp.append(seconds)
+        step += 1
+        if len(tmp) == batch_x:
+            group_data.append(tmp)
+            first_time = train_data_time[step - 1]
+
+        if len(tmp) == (batch_y + batch_x):
+            group_data_y.append(np.array(tmp[batch_y * -1:]))
+            tmp = []
+            current_i = current_i + step_i
+            step = current_i
+            first_time = train_data_time[step - 1]
+            print("时间处理中...", step)
+    group_data.pop(-1)
+    return torch.tensor(group_data).to(device), torch.tensor(group_data_y).to(device)
 
 
 def get_data_loader(opt):
@@ -345,8 +363,7 @@ def get_data_loader(opt):
 
         # 创建 网元-时间 训练集
         train_data = torch.load(opt.data_all)['train_data']['time']
-        data_time = time_split(train_data)
-        train_time_x, train_time_y = split_data_set(data_time, opt.batch_x, opt.batch_y)
+        train_time_x, train_time_y = time_split(train_data, opt.batch_x, opt.batch_y)
         train_name_x, train_name_y = m_data
         m_data_time = train_name_x, train_time_y
         data_set_time = M_Test_data(m_data_time)
@@ -354,10 +371,8 @@ def get_data_loader(opt):
                                                         pin_memory=True, drop_last=True)
 
         # 创建 网元-时间 测试集
-        val_data_time = time_split(torch.load(opt.data_all)['val_data']['time'])
-        val_time_x, val_time_y = split_data_set(val_data_time, opt.batch_x, opt.batch_y)
+        val_time_x, val_time_y = time_split(torch.load(opt.data_all)['val_data']['time'], opt.batch_x, opt.batch_y)
         val_name_x, val_name_y = m_data_val
-
         m_data_time = val_name_x, val_time_y
         data_set_time = M_Test_data(m_data_time)
         val_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
@@ -372,10 +387,12 @@ def get_data_loader(opt):
         torch.save(data_loader_p, opt.data_set)
     return data_loader, data_loader_val, train_loader_time, val_loader_time
 
+
 def get_time_vac(opt):
     train_data = torch.load(opt.data_all)['train_data']['time']
-    train_data = time_split(train_data)
-    size = np.unique(np.array(train_data)).size
+    train_data_x, train_data_y = time_split(train_data, opt.batch_x, opt.batch_y)
+    train_data_y = train_data_y.flatten(0).numpy()
+    size = np.unique(train_data_y).size
     return size
 
 
