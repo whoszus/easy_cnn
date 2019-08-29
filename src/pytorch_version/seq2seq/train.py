@@ -284,6 +284,7 @@ def main():
             betas=(0.9, 0.98), eps=1e-09),
         opt.d_model, opt.n_warmup_steps)
     if opt.train_type == 'time':
+        print("train time dim ")
         train(transformer, train_time, val_time, optimizer, device, opt)
     else:
         train(transformer, training_data, validation_data, optimizer, device, opt)
