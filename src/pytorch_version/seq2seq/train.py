@@ -380,10 +380,12 @@ def get_data_loader(opt):
         # 创建 网元-时间 训练集
         train_data = torch.load(opt.data_all)['train_data']['time']
         # train_time_x, train_time_y = time_split_group(train_data, opt.batch_x, opt.batch_y)
-        train_data = split_data_set(train_data, opt.batch_x, opt.batch_y)
-        train_time_x, train_time_y = split_data_set(train_data, opt.batch_x, opt.batch_y)
-        train_name_x, train_name_y = m_data
-        m_data_time = train_name_x, train_time_y
+        train_data = time_split(train_data)
+        # 网元 vs 时间
+        # train_time_x, train_time_y = split_data_set(train_data, opt.batch_x, opt.batch_y)
+        m_data_time= split_data_set(train_data, opt.batch_x, opt.batch_y)
+        # train_name_x, train_name_y = m_data
+        # m_data_time = train_name_x, train_time_y
         data_set_time = M_Test_data(m_data_time)
         train_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
                                                         pin_memory=True, drop_last=True)
@@ -391,9 +393,10 @@ def get_data_loader(opt):
         # 创建 网元-时间 测试集
         # val_time_x, val_time_y = time_split_group(torch.load(opt.data_all)['val_data']['time'], opt.batch_x, opt.batch_y)
         val_time = time_split(torch.load(opt.data_all)['val_data']['time'])
-        val_time_x, val_time_y = split_data_set(val_time, opt.batch_x, opt.batch_y)
-        val_name_x, val_name_y = m_data_val
-        m_data_time = val_name_x, val_time_y
+        # val_time_x, val_time_y = split_data_set(val_time, opt.batch_x, opt.batch_y)
+        m_data_time = split_data_set(val_time, opt.batch_x, opt.batch_y)
+        # val_name_x, val_name_y = m_data_val
+        # m_data_time = val_name_x, val_time_y
         data_set_time = M_Test_data(m_data_time)
         val_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
                                                       pin_memory=True, drop_last=True)
