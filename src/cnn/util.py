@@ -7,8 +7,8 @@ import time
 embedding = nn.Embedding(728, 16)
 col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 
-train_f = "data/data_train_2_sort_5w.csv"
-test_f = "./data/data_test_2_sort_5w.csv"
+train_f = "data/data_train_2_sort_50w_9.csv"
+test_f = "data/data_test_2_sort_50w_9.csv"
 
 
 # log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')
@@ -51,7 +51,7 @@ def load_data(data_type='train'):
         'train_data':data_train,
         'val_data':data_val
     }
-    torch.save(data, 'pickle/data.pt')
+    torch.save(data, 'pickle/data_9.pt')
     print(data)
     return
 

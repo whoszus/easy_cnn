@@ -212,3 +212,12 @@
 4. 接下来工作，使用设备名进行时间预测；
 ~~~
 
+#### 2019-08-30
+
+
+
+
+
+![image-20190829201925748](../../Library/Application Support/typora-user-images/image-20190829201925748.png)
+
+![image-20190829202019978](../../Library/Application Support/typora-user-images/image-20190829202019978.png)

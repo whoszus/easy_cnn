@@ -209,10 +209,10 @@ def main():
     ''' Main function '''
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-data_train', default='data/name_train.pt')
-    parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_all', default='data/data.pt')
-    parser.add_argument('-data_set', default='data/data_set.pt')
+    # parser.add_argument('-data_train', default='data/name_train.pt')
+    # parser.add_argument('-data_val', default='data/name_val.pt')
+    parser.add_argument('-data_all', default='data/data_9.pt')
+    parser.add_argument('-data_set', default='data/data_set_9.pt')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -239,7 +239,7 @@ def main():
     parser.add_argument('-label_smoothing', action='store_true')
     parser.add_argument('-batch_x', default=64)
     parser.add_argument('-batch_y', default=32)
-    parser.add_argument('-train_type', default='time')
+    parser.add_argument('-train_type', default='name')
 
     opt = parser.parse_args()
     opt.cuda = torch.cuda.is_available()
@@ -283,10 +283,10 @@ def main():
             filter(lambda x: x.requires_grad, transformer.parameters()),
             betas=(0.9, 0.98), eps=1e-09),
         opt.d_model, opt.n_warmup_steps)
-    if opt.train_type == 'name':
-        train(transformer, training_data, validation_data, optimizer, device, opt)
-    else:
+    if opt.train_type == 'time':
         train(transformer, train_time, val_time, optimizer, device, opt)
+    else:
+        train(transformer, training_data, validation_data, optimizer, device, opt)
 
 
 def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
