@@ -72,8 +72,8 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         # prepare data
         src_seq, tgt_seq = map(lambda x: x.to(device), batch)
         #
-        src_pos = torch.tensor(get_position(src_seq.shape[1])).to(device)
-        tgt_pos = torch.tensor(get_position(tgt_seq.shape[1])).to(device)
+        src_pos = torch.tensor(get_position(src_seq.shape)).to(device)
+        tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
         # gold = tgt_seq[:, 1:]
 
         # forward
@@ -100,10 +100,13 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     return loss_per_word, accuracy
 
 
-def get_position(ranges):
+def get_position(shape):
     pos = []
-    for i in range(ranges):
-        pos.append(i)
+    pos_i = []
+    for i in range(shape[1]):
+        pos_i.append(i)
+    for i in range(shape[0]):
+        pos.append(pos_i)
     return pos
 
 
@@ -123,8 +126,8 @@ def eval_epoch(model, validation_data, device):
             # prepare data
             src_seq, tgt_seq = map(lambda x: x.to(device), batch)
             # gold = tgt_seq[:, 1:]
-            src_pos = torch.tensor(get_position(src_seq.shape[1])).to(device)
-            tgt_pos = torch.tensor(get_position(tgt_seq.shape[1])).to(device)
+            src_pos = torch.tensor(get_position(src_seq.shape)).to(device)
+            tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
             # forward
             pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
             loss, n_correct = cal_performance(pred, tgt_seq, smoothing=False)
@@ -165,16 +168,16 @@ def train(model, training_data, validation_data, optimizer, device, opt):
 
         start = time.time()
         train_loss, train_accu = train_epoch(model, training_data, optimizer, device, smoothing=opt.label_smoothing)
-        print('  - (Training)   ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %, ' \
+        print('  - (Training)   loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'elapse: {elapse:3.3f} min'.format(
-            ppl=math.exp(min(train_loss, 100)), accu=100 * train_accu,
+            loss=train_loss, accu=100 * train_accu,
             elapse=(time.time() - start) / 60))
 
         start = time.time()
         valid_loss, valid_accu = eval_epoch(model, validation_data, device)
-        print('  - (Validation) ppl: {ppl: 8.5f}, accuracy: {accu:3.3f} %, ' \
+        print('  - (Validation) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'elapse: {elapse:3.3f} min'.format(
-            ppl=math.exp(min(valid_loss, 100)), accu=100 * valid_accu,
+            loss=valid_loss, accu=100 * valid_accu,
             elapse=(time.time() - start) / 60))
 
         valid_accus += [valid_accu]
