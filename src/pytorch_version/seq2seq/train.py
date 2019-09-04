@@ -211,8 +211,8 @@ def main():
 
     # parser.add_argument('-data_train', default='data/name_train.pt')
     # parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_all', default='data/data_9.pt')
-    parser.add_argument('-data_set', default='data/data_set_9.pt')
+    parser.add_argument('-data_all', default='data/data_6_5w.pt')
+    parser.add_argument('-data_set', default='data/data_set_6_5w.pt')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
