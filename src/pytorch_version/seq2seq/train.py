@@ -28,6 +28,7 @@ def cal_performance(pred, gold, smoothing=False):
 
     pred = pred.max(1)[1]
     gold = gold.contiguous().view(-1)
+    # print(pred,gold)
     non_pad_mask = gold.ne(Constants.PAD)
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
@@ -82,6 +83,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
 
         # backward
         loss, n_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
+        print(loss)
         loss.backward()
 
         # update parameters
@@ -104,7 +106,7 @@ def get_position(shape):
     pos = []
     pos_i = []
     for i in range(shape[1]):
-        pos_i.append(i)
+        pos_i.append(i+1)
     for i in range(shape[0]):
         pos.append(pos_i)
     return pos
@@ -253,8 +255,8 @@ def main():
 
     training_data, validation_data, train_time, val_time = get_data_loader(opt)
 
-    opt.src_vocab_size = 728
-    opt.tgt_vocab_size = 728
+    opt.src_vocab_size = 166
+    opt.tgt_vocab_size = 166
     if opt.train_type == 'time':
         voc = get_time_vac(opt)
         opt.tgt_vocab_size = voc if voc > 500 else 728
@@ -269,7 +271,7 @@ def main():
     transformer = Transformer(
         opt.src_vocab_size,
         opt.tgt_vocab_size,
-        opt.batch_x + 2,
+        opt.batch_x,
         tgt_emb_prj_weight_sharing=opt.proj_share_weight,
         emb_src_tgt_weight_sharing=opt.embs_share_weight,
         d_k=opt.d_k,
@@ -294,8 +296,10 @@ def main():
 
 
 def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
+    train_data_set.pop(0)
+    train_data_set.pop(1)
     current_i = 1
-    step = 0
+    step = 2
     tmp = []
     group_data = []
     group_data_y = []
@@ -304,9 +308,14 @@ def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
         step += 1
         if len(tmp) % batch_x == 0:
             print("组装中：", step)
+            # tmp[0] = Constants.PAD
+            # tmp[-1] = Constants.EOS
             group_data.append(np.array(tmp))
         if len(tmp) % (batch_y + batch_x) == 0:
-            group_data_y.append(np.array(tmp[batch_y * -1:]))
+            tmp_y = tmp[batch_y * -1:]
+            # tmp_y[0] = Constants.PAD
+            # tmp_y[-1] = Constants.EOS
+            group_data_y.append(np.array(tmp_y))
             tmp = []
             current_i = current_i + step_i
             step = current_i

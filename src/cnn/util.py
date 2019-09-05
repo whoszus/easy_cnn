@@ -16,12 +16,10 @@ test_f = "data/data_test_2_sort_5w.csv"
 
 def data_encode(train_data_X):
     print("开始转换数据格式》...")
-    x_les = []
     for name in col_names:
         if name != 'time':
             le = preprocessing.LabelEncoder()
             le.fit(train_data_X[name])
-            x_les.append(le)
             train_data_X[name] = le.transform(train_data_X[name])
     print(train_data_X.head(10), train_data_X.shape)
     return train_data_X

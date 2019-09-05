@@ -65,10 +65,10 @@ class Encoder(nn.Module):
         n_position = len_max_seq + 1
 
         self.src_word_emb = nn.Embedding(
-            n_src_vocab, d_word_vec, padding_idx=Constants.PAD)
+            n_src_vocab, d_word_vec)
 
         self.position_enc = nn.Embedding.from_pretrained(
-            get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
+            get_sinusoid_encoding_table(n_position, d_word_vec),
             freeze=True)
 
         self.layer_stack = nn.ModuleList([
@@ -111,10 +111,10 @@ class Decoder(nn.Module):
         n_position = len_max_seq + 1
 
         self.tgt_word_emb = nn.Embedding(
-            n_tgt_vocab, d_word_vec, padding_idx=Constants.PAD)
+            n_tgt_vocab, d_word_vec)
 
         self.position_enc = nn.Embedding.from_pretrained(
-            get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=0),
+            get_sinusoid_encoding_table(n_position, d_word_vec),
             freeze=True)
 
         self.layer_stack = nn.ModuleList([
