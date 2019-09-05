@@ -28,7 +28,7 @@ def cal_performance(pred, gold, smoothing=False):
 
     pred = pred.max(1)[1]
     gold = gold.contiguous().view(-1)
-    print(pred,gold)
+    print(pred, gold)
     non_pad_mask = gold.ne(Constants.PAD)
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
@@ -106,7 +106,7 @@ def get_position(shape):
     pos = []
     pos_i = []
     for i in range(shape[1]):
-        pos_i.append(i+1)
+        pos_i.append(i + 1)
     for i in range(shape[0]):
         pos.append(pos_i)
     return pos
@@ -210,7 +210,6 @@ def train(model, training_data, validation_data, optimizer, device, opt):
                     ppl=math.exp(min(valid_loss, 100)), accu=100 * valid_accu))
 
 
-
 def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
     train_data_set.pop(0)
     train_data_set.pop(1)
@@ -293,6 +292,7 @@ def get_data_loader(opt):
         data_loader_val = torch.load(opt.data_set)['val']
         train_loader_time = torch.load(opt.data_set)['time']
         val_loader_time = torch.load(opt.data_set)['val_time']
+        voc_name = torch.load(opt.data_set)['voc']
     else:
         data_train = torch.load(opt.data_all)['train_data']['dev_name']
         m_data = split_data_set(data_train, opt.batch_x, opt.batch_y)
@@ -312,7 +312,7 @@ def get_data_loader(opt):
         train_data = time_split(train_data)
         # 网元 vs 时间
         # train_time_x, train_time_y = split_data_set(train_data, opt.batch_x, opt.batch_y)
-        m_data_time= split_data_set(train_data, opt.batch_x, opt.batch_y)
+        m_data_time = split_data_set(train_data, opt.batch_x, opt.batch_y)
         # train_name_x, train_name_y = m_data
         # m_data_time = train_name_x, train_time_y
         data_set_time = M_Test_data(m_data_time)
@@ -330,14 +330,17 @@ def get_data_loader(opt):
         val_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
                                                       pin_memory=True, drop_last=True)
 
+        voc_name = torch.load(opt.data_all)['voc']
+
         data_loader_p = {
             'train': data_loader,
             'val': data_loader_val,
             'time': train_loader_time,
-            'val_time': val_loader_time
+            'val_time': val_loader_time,
+            'voc': voc_name
         }
         torch.save(data_loader_p, opt.data_set)
-    return data_loader, data_loader_val, train_loader_time, val_loader_time
+    return data_loader, data_loader_val, train_loader_time, val_loader_time, voc_name
 
 
 def get_time_vac(opt):
@@ -349,14 +352,16 @@ def get_time_vac(opt):
     size = np.unique(train_data_y).size
     return size
 
+
 def main():
     ''' Main function '''
     parser = argparse.ArgumentParser()
 
     # parser.add_argument('-data_train', default='data/name_train.pt')
     # parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_all', default='data/data_6_5w.pt')
-    parser.add_argument('-data_set', default='data/data_set_6_5w.pt')
+    parser.add_argument('-data_all', default='data/data-m9-50w-uc.pt')
+    parser.add_argument('-data_set', default='data/data-set-m9-50w-uc.pt')
+    parser.add_argument('-save_model', default='data-set-m9-50w-uc')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -377,7 +382,7 @@ def main():
     parser.add_argument('-src_vocab_size', default=146)
 
     parser.add_argument('-log', default='log/logs.log')
-    parser.add_argument('-save_model', default='trained_6_5w')
+
     parser.add_argument('-save_mode', type=str, choices=['all', 'best'], default='best')
 
     parser.add_argument('-no_cuda', action='store_true')
@@ -393,8 +398,8 @@ def main():
     # ========= Loading Dataset =========#
     # opt.max_token_seq_len = data['settings'].max_token_seq_len
 
-    training_data, validation_data, train_time, val_time = get_data_loader(opt)
-
+    training_data, validation_data, train_time, val_time, voc_name = get_data_loader(opt)
+    opt.src_vocab_size = voc_name
     opt.tgt_vocab_size = opt.src_vocab_size
     if opt.train_type == 'time':
         voc = get_time_vac(opt)

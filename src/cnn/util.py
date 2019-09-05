@@ -7,8 +7,8 @@ import time
 embedding = nn.Embedding(728, 16)
 col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
 
-train_f = "data/data_train_2_sort_5w.csv"
-test_f = "data/data_test_2_sort_5w.csv"
+train_f = "data/data_train_2_sort_50w_9.csv"
+test_f = "data/data_test_2_sort_50w_9.csv"
 
 
 # log_f = open("logs/" + str(batch_x) + '_' + c_time + '.log', 'w+')
@@ -36,6 +36,7 @@ def load_csv_data(file):
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
+
 # def delete_duplicates(data):
 #     for index, row in data.iterrows():
 #         if index > 0 and data['dev_name'][index] == data['dev_name'][index]:
@@ -47,15 +48,17 @@ def load_data(data_type='train'):
     print("开始加载数据.....")
     data_train = load_csv_data(train_f)
     data_train = data_encode(data_train)
+    data_voc = len(pd.unique(pd.array(data_train['dev_name'])))
 
     data_val = load_csv_data(test_f)
     data_val = data_encode(data_val)
 
     data = {
         'train_data': data_train,
-        'val_data': data_val
+        'val_data': data_val,
+        'voc': data_voc
     }
-    torch.save(data, 'pickle/data_6_5w.pt')
+    torch.save(data, 'pickle/data-m9-50w-uc.pt')
     print(data)
     return
 
