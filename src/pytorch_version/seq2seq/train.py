@@ -292,7 +292,7 @@ def get_data_loader(opt):
         data_loader_val = torch.load(opt.data_set)['val']
         train_loader_time = torch.load(opt.data_set)['time']
         val_loader_time = torch.load(opt.data_set)['val_time']
-        voc_name = torch.load(opt.data_set)['voc']
+        # voc_name = torch.load(opt.data_set)['voc']
     else:
         data_train = torch.load(opt.data_all)['train_data']['dev_name']
         m_data = split_data_set(data_train, opt.batch_x, opt.batch_y)
@@ -330,17 +330,17 @@ def get_data_loader(opt):
         val_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
                                                       pin_memory=True, drop_last=True)
 
-        voc_name = torch.load(opt.data_all)['voc']
+        # voc_name = torch.load(opt.data_all)['voc']
 
         data_loader_p = {
             'train': data_loader,
             'val': data_loader_val,
             'time': train_loader_time,
-            'val_time': val_loader_time,
-            'voc': voc_name
+            'val_time': val_loader_time
+            # 'voc': voc_name
         }
         torch.save(data_loader_p, opt.data_set)
-    return data_loader, data_loader_val, train_loader_time, val_loader_time, voc_name
+    return data_loader, data_loader_val, train_loader_time, val_loader_time
 
 
 def get_time_vac(opt):
@@ -398,7 +398,7 @@ def main():
     # ========= Loading Dataset =========#
     # opt.max_token_seq_len = data['settings'].max_token_seq_len
 
-    training_data, validation_data, train_time, val_time, voc_name = get_data_loader(opt)
+    training_data, validation_data, train_time, val_time = get_data_loader(opt)
     # opt.src_vocab_size = voc_name
     opt.tgt_vocab_size = opt.src_vocab_size
     if opt.train_type == 'time':
