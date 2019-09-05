@@ -210,90 +210,6 @@ def train(model, training_data, validation_data, optimizer, device, opt):
                     ppl=math.exp(min(valid_loss, 100)), accu=100 * valid_accu))
 
 
-def main():
-    ''' Main function '''
-    parser = argparse.ArgumentParser()
-
-    # parser.add_argument('-data_train', default='data/name_train.pt')
-    # parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_all', default='data/data_6_5w.pt')
-    parser.add_argument('-data_set', default='data/data_set_6_5w.pt')
-
-    parser.add_argument('-epoch', type=int, default=10)
-    parser.add_argument('-batch_size', type=int, default=64)
-
-    # parser.add_argument('-d_word_vec', type=int, default=512)
-    parser.add_argument('-d_model', type=int, default=512)
-    parser.add_argument('-d_inner_hid', type=int, default=2048)
-    parser.add_argument('-d_k', type=int, default=64)
-    parser.add_argument('-d_v', type=int, default=64)
-
-    parser.add_argument('-n_head', type=int, default=8)
-    parser.add_argument('-n_layers', type=int, default=6)
-    parser.add_argument('-n_warmup_steps', type=int, default=4000)
-
-    parser.add_argument('-dropout', type=float, default=0.1)
-    parser.add_argument('-embs_share_weight', action='store_true')
-    parser.add_argument('-proj_share_weight', action='store_true')
-
-    parser.add_argument('-log', default='log/logs.log')
-    parser.add_argument('-save_model', default='trained_9')
-    parser.add_argument('-save_mode', type=str, choices=['all', 'best'], default='best')
-
-    parser.add_argument('-no_cuda', action='store_true')
-    parser.add_argument('-label_smoothing', action='store_true')
-    parser.add_argument('-batch_x', default=64)
-    parser.add_argument('-batch_y', default=32)
-    parser.add_argument('-train_type', default='name')
-
-    opt = parser.parse_args()
-    opt.cuda = torch.cuda.is_available()
-    opt.d_word_vec = opt.d_model
-
-    # ========= Loading Dataset =========#
-    # opt.max_token_seq_len = data['settings'].max_token_seq_len
-
-    training_data, validation_data, train_time, val_time = get_data_loader(opt)
-
-    opt.src_vocab_size = 166
-    opt.tgt_vocab_size = 166
-    if opt.train_type == 'time':
-        voc = get_time_vac(opt)
-        opt.tgt_vocab_size = voc if voc > 500 else 728
-
-        # ========= Preparing Model =========#
-    if opt.embs_share_weight:
-        assert opt.src_vocab_size == opt.tgt_vocab_size, \
-            'The src/tgt word2idx table are different but asked to share word embedding.'
-
-    print(opt)
-
-    transformer = Transformer(
-        opt.src_vocab_size,
-        opt.tgt_vocab_size,
-        opt.batch_x,
-        tgt_emb_prj_weight_sharing=opt.proj_share_weight,
-        emb_src_tgt_weight_sharing=opt.embs_share_weight,
-        d_k=opt.d_k,
-        d_v=opt.d_v,
-        d_model=opt.d_model,
-        d_word_vec=opt.d_word_vec,
-        d_inner=opt.d_inner_hid,
-        n_layers=opt.n_layers,
-        n_head=opt.n_head,
-        dropout=opt.dropout).to(device)
-
-    optimizer = ScheduledOptim(
-        optim.Adam(
-            filter(lambda x: x.requires_grad, transformer.parameters()),
-            betas=(0.9, 0.98), eps=1e-09),
-        opt.d_model, opt.n_warmup_steps)
-    if opt.train_type == 'time':
-        print("train time dim ")
-        train(transformer, train_time, val_time, optimizer, device, opt)
-    else:
-        train(transformer, training_data, validation_data, optimizer, device, opt)
-
 
 def split_data_set(train_data_set, batch_x, batch_y, step_i=12):
     train_data_set.pop(0)
@@ -432,6 +348,90 @@ def get_time_vac(opt):
     train_data_y = np.array(train_data_y)
     size = np.unique(train_data_y).size
     return size
+
+def main():
+    ''' Main function '''
+    parser = argparse.ArgumentParser()
+
+    # parser.add_argument('-data_train', default='data/name_train.pt')
+    # parser.add_argument('-data_val', default='data/name_val.pt')
+    parser.add_argument('-data_all', default='data/data_9.pt')
+    parser.add_argument('-data_set', default='data/data_set_9.pt')
+
+    parser.add_argument('-epoch', type=int, default=10)
+    parser.add_argument('-batch_size', type=int, default=64)
+
+    # parser.add_argument('-d_word_vec', type=int, default=512)
+    parser.add_argument('-d_model', type=int, default=512)
+    parser.add_argument('-d_inner_hid', type=int, default=2048)
+    parser.add_argument('-d_k', type=int, default=64)
+    parser.add_argument('-d_v', type=int, default=64)
+
+    parser.add_argument('-n_head', type=int, default=8)
+    parser.add_argument('-n_layers', type=int, default=6)
+    parser.add_argument('-n_warmup_steps', type=int, default=4000)
+
+    parser.add_argument('-dropout', type=float, default=0.1)
+    parser.add_argument('-embs_share_weight', action='store_true')
+    parser.add_argument('-proj_share_weight', action='store_true')
+    parser.add_argument('-src_vocab_size', default=728)
+
+    parser.add_argument('-log', default='log/logs.log')
+    parser.add_argument('-save_model', default='trained_9')
+    parser.add_argument('-save_mode', type=str, choices=['all', 'best'], default='best')
+
+    parser.add_argument('-no_cuda', action='store_true')
+    parser.add_argument('-label_smoothing', action='store_true')
+    parser.add_argument('-batch_x', default=64)
+    parser.add_argument('-batch_y', default=32)
+    parser.add_argument('-train_type', default='name')
+
+    opt = parser.parse_args()
+    opt.cuda = torch.cuda.is_available()
+    opt.d_word_vec = opt.d_model
+
+    # ========= Loading Dataset =========#
+    # opt.max_token_seq_len = data['settings'].max_token_seq_len
+
+    training_data, validation_data, train_time, val_time = get_data_loader(opt)
+
+    opt.tgt_vocab_size = opt.src_vocab_size
+    if opt.train_type == 'time':
+        voc = get_time_vac(opt)
+        opt.tgt_vocab_size = voc if voc > 500 else 728
+
+        # ========= Preparing Model =========#
+    if opt.embs_share_weight:
+        assert opt.src_vocab_size == opt.tgt_vocab_size, \
+            'The src/tgt word2idx table are different but asked to share word embedding.'
+
+    print(opt)
+
+    transformer = Transformer(
+        opt.src_vocab_size,
+        opt.tgt_vocab_size,
+        opt.batch_x,
+        tgt_emb_prj_weight_sharing=opt.proj_share_weight,
+        emb_src_tgt_weight_sharing=opt.embs_share_weight,
+        d_k=opt.d_k,
+        d_v=opt.d_v,
+        d_model=opt.d_model,
+        d_word_vec=opt.d_word_vec,
+        d_inner=opt.d_inner_hid,
+        n_layers=opt.n_layers,
+        n_head=opt.n_head,
+        dropout=opt.dropout).to(device)
+
+    optimizer = ScheduledOptim(
+        optim.Adam(
+            filter(lambda x: x.requires_grad, transformer.parameters()),
+            betas=(0.9, 0.98), eps=1e-09),
+        opt.d_model, opt.n_warmup_steps)
+    if opt.train_type == 'time':
+        print("train time dim ")
+        train(transformer, train_time, val_time, optimizer, device, opt)
+    else:
+        train(transformer, training_data, validation_data, optimizer, device, opt)
 
 
 if __name__ == '__main__':
