@@ -28,7 +28,7 @@ def cal_performance(pred, gold, smoothing=False):
 
     pred = pred.max(1)[1]
     gold = gold.contiguous().view(-1)
-    # print(pred,gold)
+    print(pred,gold)
     non_pad_mask = gold.ne(Constants.PAD)
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
