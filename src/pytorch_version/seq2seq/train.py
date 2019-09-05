@@ -355,8 +355,8 @@ def main():
 
     # parser.add_argument('-data_train', default='data/name_train.pt')
     # parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_all', default='data/data_9.pt')
-    parser.add_argument('-data_set', default='data/data_set_9.pt')
+    parser.add_argument('-data_all', default='data/data_6_5w.pt')
+    parser.add_argument('-data_set', default='data/data_set_6_5w.pt')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -374,10 +374,10 @@ def main():
     parser.add_argument('-dropout', type=float, default=0.1)
     parser.add_argument('-embs_share_weight', action='store_true')
     parser.add_argument('-proj_share_weight', action='store_true')
-    parser.add_argument('-src_vocab_size', default=728)
+    parser.add_argument('-src_vocab_size', default=146)
 
     parser.add_argument('-log', default='log/logs.log')
-    parser.add_argument('-save_model', default='trained_9')
+    parser.add_argument('-save_model', default='trained_6_5w')
     parser.add_argument('-save_mode', type=str, choices=['all', 'best'], default='best')
 
     parser.add_argument('-no_cuda', action='store_true')

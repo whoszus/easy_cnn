@@ -29,11 +29,18 @@ def data_encode(train_data_X):
 def load_csv_data(file):
     print("开始加载数据..")
     data = pd.read_csv(file, names=col_names, encoding='utf-8')
-    data = data.drop_duplicates().dropna().reset_index(drop=True)
+    data = data.drop_duplicates()
+    # 去除连续的重复
+    data = data.loc[(data['dev_name'].shift() != data['dev_name'])].dropna().reset_index(drop=True)
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
     return data
 
+# def delete_duplicates(data):
+#     for index, row in data.iterrows():
+#         if index > 0 and data['dev_name'][index] == data['dev_name'][index]:
+#             data.drop(index)
+#     return data
 
 # 加载数据
 def load_data(data_type='train'):
