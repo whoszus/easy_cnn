@@ -360,8 +360,8 @@ def main():
     # parser.add_argument('-data_train', default='data/name_train.pt')
     # parser.add_argument('-data_val', default='data/name_val.pt')
     parser.add_argument('-data_all', default='data/data-m9-50w-cc.pt')
-    parser.add_argument('-data_set', default='data/data-set-m9-50w-cc.pt')
-    parser.add_argument('-save_model', default='data-set-m9-50w-cc')
+    parser.add_argument('-data_set', default='data/data_set_6_5w.pt')
+    parser.add_argument('-save_model', default='data_set_6_5w')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -399,7 +399,7 @@ def main():
     # opt.max_token_seq_len = data['settings'].max_token_seq_len
 
     training_data, validation_data, train_time, val_time, voc_name = get_data_loader(opt)
-    opt.src_vocab_size = voc_name
+    # opt.src_vocab_size = voc_name
     opt.tgt_vocab_size = opt.src_vocab_size
     if opt.train_type == 'time':
         voc = get_time_vac(opt)
