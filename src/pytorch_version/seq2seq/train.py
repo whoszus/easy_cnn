@@ -359,9 +359,9 @@ def main():
 
     # parser.add_argument('-data_train', default='data/name_train.pt')
     # parser.add_argument('-data_val', default='data/name_val.pt')
-    parser.add_argument('-data_all', default='data/data-m9-50w-uc.pt')
-    parser.add_argument('-data_set', default='data/data-set-m9-50w-uc.pt')
-    parser.add_argument('-save_model', default='data-set-m9-50w-uc')
+    parser.add_argument('-data_all', default='data/data-m9-50w-cc.pt')
+    parser.add_argument('-data_set', default='data/data-set-m9-50w-cc.pt')
+    parser.add_argument('-save_model', default='data-set-m9-50w-cc')
 
     parser.add_argument('-epoch', type=int, default=10)
     parser.add_argument('-batch_size', type=int, default=64)
