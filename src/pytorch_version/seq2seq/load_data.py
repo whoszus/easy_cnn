@@ -48,27 +48,28 @@ def load_data_by_num(data, start, num):
     return data[data['time'] >= start][num]
 
 
-def load_data_by_date(data, start, end):
+def load_data_by_date(df, start, end):
     # return data[start <= data['time'] <= end]
-    return data[[any([a, b]) for a, b in zip(data.time >= start, data.time <= end)]]
+    mask = (df['time'] >= start) & (df['time'] <= end)
+    return df.loc[mask]
 
 
 # 加载数据
 def load_data(torch_save_path, start, end, num=0):
     print("开始加载数据.....")
-    data_load = torch.load(torch_save_path)
+    data_load = torch.load(torch_save_path)['data_all']
     start_time = pd.to_datetime(start, format='%Y-%m-%d %H:%M:%S')
     end_time = pd.to_datetime(end, format='%Y-%m-%d %H:%M:%S')
     if num > 0:
-        data_all = load_data_by_num(data_load, start_time, num)
+        data_load = load_data_by_num(data_load, start_time, num)
     else:
-        data_all = load_data_by_date(data_load, start_time, end_time)
+        data_load = load_data_by_date(data_load, start_time, end_time)
 
-    data_len = len(data_all['dev_name'])
-    data_train = data_all[:int(train_rate * data_len)]
+    data_len = len(data_load['dev_name'])
+    data_train = data_load[:int(train_rate * data_len)]
     data_train = data_encode(data_train)
 
-    data_val = data_all[int((1 - train_rate) * data_len) * -1:]
+    data_val = data_load[int((1 - train_rate) * data_len) * -1:]
     data_val = data_encode(data_val)
 
     data_voc = len(pd.unique(pd.array(data_train['dev_name']))) + len(pd.unique(pd.array(data_val['dev_name'])))
@@ -162,7 +163,7 @@ def get_data_loader(opt, device):
         load_csv_data(opt.data_all)
 
     dataset_path = 'data/data_set/' + opt.start_time + '#' + opt.end_time + '.pt'
-    if os.path.exists(opt.dataset_path):
+    if os.path.exists(dataset_path):
         data_loader = torch.load(opt.data_set)['train']
         data_loader_val = torch.load(opt.data_set)['val']
         # train_loader_time = torch.load(opt.data_set)['time']
