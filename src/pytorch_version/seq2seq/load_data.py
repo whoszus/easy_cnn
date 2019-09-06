@@ -4,7 +4,7 @@ import torch
 from sklearn import preprocessing
 import os
 
-col_names = ["city", "dev_name", "dev_type", "time", "alm_level"]
+col_names = ["dev_name", "time"]
 
 torch_save_path = 'data/csv/data_train_2_sort.torch'
 file_path = 'data/csv/data_train_2_sort.csv'
