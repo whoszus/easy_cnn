@@ -85,7 +85,7 @@ def load_data(torch_save_path, start, end, num=0):
 
 def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
     current_i = 1
-    step = 2
+    step = 0
     tmp = []
     group_data = []
     group_data_y = []
