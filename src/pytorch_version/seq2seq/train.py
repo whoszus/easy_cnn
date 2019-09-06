@@ -220,7 +220,7 @@ def main():
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-06-01#2018-06-15#cc.pt')
     parser.add_argument('-start_time', default='2018-06-01')
-    parser.add_argument('-end_time', default='2018-06-15')
+    parser.add_argument('-end_time', default='2018-06-02')
 
     parser.add_argument('-epoch', type=int, default=60)
     parser.add_argument('-batch_size', type=int, default=64)
@@ -257,7 +257,7 @@ def main():
     # ========= Loading Dataset =========#
     # opt.max_token_seq_len = data['settings'].max_token_seq_len
 
-    training_data, validation_data, train_time, val_time, voc_name = ld.get_data_loader(opt, device)
+    training_data, validation_data, voc_name = ld.get_data_loader(opt, device)
     opt.src_vocab_size = voc_name
     opt.tgt_vocab_size = opt.src_vocab_size
     if opt.train_type == 'time':

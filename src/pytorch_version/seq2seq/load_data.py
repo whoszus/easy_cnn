@@ -89,6 +89,7 @@ def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
     tmp = []
     group_data = []
     group_data_y = []
+    train_data_set = train_data_set.tolist()
     while step < len(train_data_set):
         tmp.append(train_data_set[step])
         step += 1
@@ -164,11 +165,11 @@ def get_data_loader(opt, device):
 
     dataset_path = 'data/data_set/' + opt.start_time + '#' + opt.end_time + '.pt'
     if os.path.exists(dataset_path):
-        data_loader = torch.load(opt.data_set)['train']
-        data_loader_val = torch.load(opt.data_set)['val']
-        # train_loader_time = torch.load(opt.data_set)['time']
-        # val_loader_time = torch.load(opt.data_set)['val_time']
-        voc_name = torch.load(opt.data_set)['voc']
+        data_loader = torch.load(dataset_path)['train']
+        data_loader_val = torch.load(dataset_path)['val']
+        # train_loader_time = torch.load(dataset_path)['time']
+        # val_loader_time = torch.load(dataset_path)['val_time']
+        voc_name = torch.load(dataset_path)['voc']
     else:
         tmp_data_path = 'data/pt/' + opt.start_time + '#' + opt.end_time + '.pt'
         if os.path.exists(tmp_data_path):
