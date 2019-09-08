@@ -220,7 +220,7 @@ def main():
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-06-01#2018-06-15#cc.pt')
     parser.add_argument('-start_time', default='2018-06-01')
-    parser.add_argument('-end_time', default='2018-06-02')
+    parser.add_argument('-end_time', default='2018-06-15')
 
     parser.add_argument('-epoch', type=int, default=60)
     parser.add_argument('-batch_size', type=int, default=1)
