@@ -193,7 +193,7 @@ def get_data_loader(opt, device):
         # val_loader_time = torch.load(dataset_path)['val_time']
         voc_name = torch.load(dataset_path)['voc']
     else:
-        tmp_data_path = 'data/pt/' + opt.start_time + '#' + opt.end_time + '.pt'
+        tmp_data_path = save_pt_path + opt.start_time + '#' + opt.end_time + '.pt'
         if os.path.exists(tmp_data_path):
             data_train = torch.load(tmp_data_path)['train_data']['dev_name']
             data_val = torch.load(tmp_data_path)['val_data']['dev_name']

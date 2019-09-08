@@ -27,7 +27,7 @@ def cal_performance(pred, gold, smoothing=False):
 
     pred = pred.max(1)[1]
     gold = gold.contiguous().view(-1)
-    print(pred, gold)
+    # print(pred, gold)
     non_pad_mask = gold.ne(Constants.PAD)
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
@@ -82,7 +82,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
 
         # backward
         loss, n_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
-        print(loss)
+        # print(loss)
         loss.backward()
 
         # update parameters
@@ -219,11 +219,11 @@ def main():
     # parser.add_argument('-data_set', default='data/data_set/2018-06-01#2018-06-15.pt')
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-06-01#2018-06-15#cc.pt')
-    parser.add_argument('-start_time', default='2018-06-01')
-    parser.add_argument('-end_time', default='2018-06-2')
+    parser.add_argument('-start_time', default='2018-07-01')
+    parser.add_argument('-end_time', default='2018-07-15')
 
     parser.add_argument('-epoch', type=int, default=60)
-    parser.add_argument('-batch_size', type=int, default=16)
+    parser.add_argument('-batch_size', type=int, default=64)
 
     # parser.add_argument('-d_word_vec', type=int, default=512)
     parser.add_argument('-d_model', type=int, default=512)
