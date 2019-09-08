@@ -206,7 +206,7 @@ def get_data_loader(opt, device):
 
         m_data = split_data_set(data_train, opt.batch_x, opt.batch_y, device)
         data_set_train = M_Test_data(m_data)
-        data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=False,
+        data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True,
                                                   pin_memory=True, drop_last=True)
 
         m_data_val = split_data_set(data_val, opt.batch_x, opt.batch_y, device)
