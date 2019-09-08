@@ -223,7 +223,7 @@ def main():
     parser.add_argument('-end_time', default='2018-06-02')
 
     parser.add_argument('-epoch', type=int, default=60)
-    parser.add_argument('-batch_size', type=int, default=64)
+    parser.add_argument('-batch_size', type=int, default=1)
 
     # parser.add_argument('-d_word_vec', type=int, default=512)
     parser.add_argument('-d_model', type=int, default=512)
@@ -233,7 +233,7 @@ def main():
 
     parser.add_argument('-n_head', type=int, default=8)
     parser.add_argument('-n_layers', type=int, default=6)
-    parser.add_argument('-n_warmup_steps', type=int, default=4000)
+    parser.add_argument('-n_warmup_steps', type=int, default=500)
 
     parser.add_argument('-dropout', type=float, default=0.1)
     parser.add_argument('-embs_share_weight', action='store_true')
@@ -293,7 +293,7 @@ def main():
         opt.d_model, opt.n_warmup_steps)
     if opt.train_type == 'time':
         print("train time dim ")
-        train(transformer, train_time, val_time, optimizer, device, opt)
+        # train(transformer, train_time, val_time, optimizer, device, opt)
     else:
         train(transformer, training_data, validation_data, optimizer, device, opt)
 
