@@ -45,9 +45,11 @@ def get_dict(train_data_x, start, end):
     # count_set = train_data_x.groupby(['dev_name']).size().reset_index(name='counts').sort_values(
     #     'counts').reset_index().reset_index()
     # 随机编码
-    count_set = train_data_x.groupby(['dev_name']).sort_values('dev_name')
+    count_set = pd.unique(pd.array(train_data_x['dev_name']))
 
-    dev_name_dict = {w: index + 1 for index, w in count_set['dev_name'].iteritems()}
+    # dev_name_dict = {w: index + 1 for index, w in count_set['dev_name'].iteritems()}
+    dev_name_dict = {w: index + 1 for index, w in enumerate(count_set)}
+
     torch.save(dev_name_dict,dict_path_s)
     return dev_name_dict
 
