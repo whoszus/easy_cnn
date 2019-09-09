@@ -41,8 +41,12 @@ def get_dict(train_data_x, start, end):
     if os.path.exists(dict_path_s):
         return torch.load(dict_path_s)
 
-    count_set = train_data_x.groupby(['dev_name']).size().reset_index(name='counts').sort_values(
-        'counts').reset_index().reset_index()
+    #  按数量编码
+    # count_set = train_data_x.groupby(['dev_name']).size().reset_index(name='counts').sort_values(
+    #     'counts').reset_index().reset_index()
+    # 随机编码
+    count_set = train_data_x.groupby(['dev_name']).sort_values('dev_name')
+
     dev_name_dict = {w: index + 1 for index, w in count_set['dev_name'].iteritems()}
     torch.save(dev_name_dict,dict_path_s)
     return dev_name_dict
