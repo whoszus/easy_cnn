@@ -247,7 +247,7 @@ def main():
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-label_smoothing', action='store_true')
     parser.add_argument('-batch_x', default=32)
-    parser.add_argument('-batch_y', default=16)
+    parser.add_argument('-batch_y', default=31)
     parser.add_argument('-train_type', default='name')
 
     opt = parser.parse_args()
