@@ -220,10 +220,10 @@ def main():
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-06-01#2018-06-15#cc.pt')
     parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-07-01 10:00:00')
+    parser.add_argument('-end_time', default='2018-07-01 6:00:00')
 
     parser.add_argument('-epoch', type=int, default=60)
-    parser.add_argument('-batch_size', type=int, default=64)
+    parser.add_argument('-batch_size', type=int, default=32)
 
     # parser.add_argument('-d_word_vec', type=int, default=512)
     parser.add_argument('-d_model', type=int, default=512)
@@ -246,8 +246,8 @@ def main():
 
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-label_smoothing', action='store_true')
-    parser.add_argument('-batch_x', default=64)
-    parser.add_argument('-batch_y', default=32)
+    parser.add_argument('-batch_x', default=32)
+    parser.add_argument('-batch_y', default=16)
     parser.add_argument('-train_type', default='name')
 
     opt = parser.parse_args()
