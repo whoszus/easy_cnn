@@ -38,19 +38,12 @@ def data_encode_sort(train_data_x, dev_name_dict):
 # 获取设备字典
 def get_dict(train_data_x, start, end):
     dict_path_s = dict_path + start + '#' + end + '.pt'
+    dict_path_s = dict_path_s.replace(" ", "#").replace(":", "-")
     if os.path.exists(dict_path_s):
         return torch.load(dict_path_s)
-
-    #  按数量编码
-    # count_set = train_data_x.groupby(['dev_name']).size().reset_index(name='counts').sort_values(
-    #     'counts').reset_index().reset_index()
-    # 随机编码
     count_set = pd.unique(pd.array(train_data_x['dev_name']))
-
-    # dev_name_dict = {w: index + 1 for index, w in count_set['dev_name'].iteritems()}
     dev_name_dict = {w: index + 1 for index, w in enumerate(count_set)}
-
-    torch.save(dev_name_dict,dict_path_s)
+    torch.save(dev_name_dict, dict_path_s)
     return dev_name_dict
 
 
@@ -62,8 +55,6 @@ def load_csv_data(torch_save_path):
     print("开始加载数据..")
     data = pd.read_csv(file_path, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
-    # 去除连续的重复
-    # data = data.loc[(data['dev_name'].shift() != data['dev_name'])].dropna().reset_index(drop=True)
     data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
     torch_save_data = {
         'data_all': data
@@ -95,7 +86,7 @@ def load_data(torch_save_path, start, end, num=0):
         data_load = load_data_by_date(data_load, start_time, end_time)
     dict_name = get_dict(data_load, start, end)
     data_len = len(data_load['dev_name'])
-    data_load = data_encode_sort(data_load,dict_name)
+    data_load = data_encode_sort(data_load, dict_name)
     data_train = data_load[:int(train_rate * data_len)]
 
     data_val = data_load[int((1 - train_rate) * data_len) * -1:]
@@ -107,7 +98,9 @@ def load_data(torch_save_path, start, end, num=0):
         'val_data': data_val,
         'voc': data_voc
     }
-    torch.save(data, save_pt_path + start + '#' + end + '.pt')
+    path = save_pt_path + start + '#' + end + '.pt'
+    path = path.replace(" ", "#").replace(":", "-")
+    torch.save(data, path)
     return data
 
 
@@ -123,13 +116,9 @@ def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
         step += 1
         if len(tmp) % batch_x == 0:
             print("组装中：", step)
-            # tmp[0] = Constants.PAD
-            # tmp[-1] = Constants.EOS
             group_data.append(np.array(tmp))
         if len(tmp) % (batch_y + batch_x) == 0:
             tmp_y = tmp[batch_y * -1:]
-            # tmp_y[0] = Constants.PAD
-            # tmp_y[-1] = Constants.EOS
             group_data_y.append(np.array(tmp_y))
             tmp = []
             current_i = current_i + step_i
@@ -192,19 +181,18 @@ def get_data_loader(opt, device):
         load_csv_data(opt.data_all)
 
     dataset_path = 'data/data_set/' + opt.start_time + '#' + opt.end_time + '.pt'
+    dataset_path = dataset_path.replace(" ", "#").replace(":", "-")
     if os.path.exists(dataset_path):
         data_loader = torch.load(dataset_path)['train']
         data_loader_val = torch.load(dataset_path)['val']
-        # train_loader_time = torch.load(dataset_path)['time']
-        # val_loader_time = torch.load(dataset_path)['val_time']
         voc_name = torch.load(dataset_path)['voc']
     else:
         tmp_data_path = save_pt_path + opt.start_time + '#' + opt.end_time + '.pt'
+        tmp_data_path = tmp_data_path.replace(" ", "#").replace(":", "-")
+
         if os.path.exists(tmp_data_path):
             data_train = torch.load(tmp_data_path)['train_data']['dev_name']
             data_val = torch.load(tmp_data_path)['val_data']['dev_name']
-            # train_data_time = torch.load(tmp_data_path)['train_data']['time']
-            # val_time = time_split(torch.load(tmp_data_path)['val_data']['time'])
         else:
             data_tmp = load_data(opt.data_all, opt.start_time, opt.end_time)
             data_train = data_tmp['train_data']['dev_name']
@@ -213,34 +201,18 @@ def get_data_loader(opt, device):
         m_data = split_data_set(data_train, opt.batch_x, opt.batch_y, device)
         data_set_train = M_Test_data(m_data)
         data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True,
-                                                  pin_memory=True, drop_last=True)
+                                                  drop_last=True)
 
         m_data_val = split_data_set(data_val, opt.batch_x, opt.batch_y, device)
         data_set_val = M_Test_data(m_data_val)
         data_loader_val = torch.utils.data.DataLoader(data_set_val, batch_size=opt.batch_size, shuffle=True,
-                                                      pin_memory=True, drop_last=True)
-
-        # # 创建 网元-时间 训练集
-        # train_data = time_split(train_data)
-        # # 网元 vs 时间
-        # m_data_time = split_data_set(train_data, opt.batch_x, opt.batch_y, device)
-        # data_set_time = M_Test_data(m_data_time)
-        # train_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
-        #                                                 pin_memory=True, drop_last=True)
-        #
-        # # 创建 网元-时间 测试集
-        # m_data_time = split_data_set(val_time, opt.batch_x, opt.batch_y, device)
-        # data_set_time = M_Test_data(m_data_time)
-        # val_loader_time = torch.utils.data.DataLoader(data_set_time, batch_size=opt.batch_size, shuffle=True,
-        #                                               pin_memory=True, drop_last=True)
+                                                      drop_last=True)
 
         voc_name = torch.load(tmp_data_path)['voc']
 
         data_loader_p = {
             'train': data_loader,
             'val': data_loader_val,
-            # 'time': train_loader_time,
-            # 'val_time': val_loader_time,
             'voc': voc_name
         }
         torch.save(data_loader_p, dataset_path)
@@ -249,9 +221,7 @@ def get_data_loader(opt, device):
 
 def get_time_vac(opt):
     train_data = torch.load(opt.data_all)['train_data']['time']
-    # train_data_x, train_data_y = time_split_group(train_data, opt.batch_x, opt.batch_y)
     train_data_y = time_split(train_data)
-    # train_data_y = train_data_y.flatten(0).numpy()
     train_data_y = np.array(train_data_y)
     size = np.unique(train_data_y).size
     return size
@@ -260,5 +230,4 @@ def get_time_vac(opt):
 if __name__ == '__main__':
     start_time_str = '2018-06-01'
     end_time_str = '2018-06-15'
-    # load_csv_data('data/csv/data_train_2_sort.torch')
     load_data('data/csv/data_train_2_sort.torch', start_time_str, end_time_str)

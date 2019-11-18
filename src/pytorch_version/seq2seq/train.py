@@ -14,10 +14,12 @@ import torch.utils.data
 import transformer.Constants as Constants
 from transformer.Models import Transformer
 from transformer.Optim import ScheduledOptim
+from tensorboardX import SummaryWriter
 
 import load_data as ld
 
-device = torch.device('cuda0' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+writer = SummaryWriter('log')
 
 
 def cal_performance(pred, gold, smoothing=False):
@@ -66,11 +68,9 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     n_word_total = 0
     n_word_correct = 0
 
-    for batch in tqdm(
-            training_data, mininterval=2,
-            desc='  - (Training)   ', leave=False):
+    for batch in tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # prepare data
-        src_seq, tgt_seq = map(lambda x: x.to(device), batch)
+        src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
         #
         src_pos = torch.tensor(get_position(src_seq.shape)).to(device)
         tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
@@ -82,6 +82,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
 
         # backward
         loss, n_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
+        # writer.add_scalar('Train/Loss', loss.data[0], niter)
         # print(loss)
         loss.backward()
 
@@ -125,7 +126,7 @@ def eval_epoch(model, validation_data, device):
                 validation_data, mininterval=2,
                 desc='  - (Validation) ', leave=False):
             # prepare data
-            src_seq, tgt_seq = map(lambda x: x.to(device), batch)
+            src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
             # gold = tgt_seq[:, 1:]
             src_pos = torch.tensor(get_position(src_seq.shape)).to(device)
             tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
@@ -218,9 +219,9 @@ def main():
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
     # parser.add_argument('-data_set', default='data/data_set/2018-06-01#2018-06-15.pt')
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
-    parser.add_argument('-save_model', default='module/2018-06-01#2018-06-15#cc.pt')
+    parser.add_argument('-save_model', default='module/tinker-test#cc.pt')
     parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-07-01 6:00:00')
+    parser.add_argument('-end_time', default='2018-07-01 7:00:00')
 
     parser.add_argument('-epoch', type=int, default=60)
     parser.add_argument('-batch_size', type=int, default=32)
