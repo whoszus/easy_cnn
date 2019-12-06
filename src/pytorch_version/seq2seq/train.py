@@ -19,7 +19,7 @@ from tensorboardX import SummaryWriter
 import load_data as ld
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-writer = SummaryWriter('log')
+writer = SummaryWriter('tfb')
 
 
 def cal_performance(pred, gold, smoothing=False):
@@ -67,6 +67,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     total_loss = 0
     n_word_total = 0
     n_word_correct = 0
+    step = 1
 
     for batch in tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # prepare data
@@ -82,7 +83,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
 
         # backward
         loss, n_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
-        # writer.add_scalar('Train/Loss', loss.data[0], niter)
+
         # print(loss)
         loss.backward()
 
@@ -91,11 +92,15 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
 
         # note keeping
         total_loss += loss.item()
+        if (step % 50) == 0:
+            writer.add_scalar('ACT-Train/loss/50step', loss.item(), step)
+            writer.close()
 
         non_pad_mask = tgt_seq.ne(Constants.PAD)
         n_word = non_pad_mask.sum().item()
         n_word_total += n_word
         n_word_correct += n_correct
+        step += 1
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
@@ -136,7 +141,6 @@ def eval_epoch(model, validation_data, device):
 
             # note keeping
             total_loss += loss.item()
-
             non_pad_mask = tgt_seq.ne(Constants.PAD)
             n_word = non_pad_mask.sum().item()
             n_word_total += n_word
@@ -160,9 +164,9 @@ def train(model, training_data, validation_data, optimizer, device, opt):
         print('[Info] Training performance will be written to file: {} and {}'.format(
             log_train_file, log_valid_file))
 
-        with open(log_train_file, 'w') as log_tf, open(log_valid_file, 'w') as log_vf:
-            log_tf.write('epoch,loss,ppl,accuracy\n')
-            log_vf.write('epoch,loss,ppl,accuracy\n')
+        # with open(log_train_file, 'w') as log_tf, open(log_valid_file, 'w') as log_vf:
+        #     log_tf.write('epoch,loss,ppl,accuracy\n')
+        #     log_vf.write('epoch,loss,ppl,accuracy\n')
 
     valid_accus = []
     for epoch_i in range(opt.epoch):
@@ -175,12 +179,18 @@ def train(model, training_data, validation_data, optimizer, device, opt):
             loss=train_loss, accu=100 * train_accu,
             elapse=(time.time() - start) / 60))
 
+        writer.add_scalar('ACT-Train/Loss', train_loss, epoch_i * 3)
+        writer.add_scalar('ACT-Train/Accuracy', 100 * train_accu, epoch_i * 3)
+
         start = time.time()
         valid_loss, valid_accu = eval_epoch(model, validation_data, device)
         print('  - (Validation) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'elapse: {elapse:3.3f} min'.format(
             loss=valid_loss, accu=100 * valid_accu,
             elapse=(time.time() - start) / 60))
+
+        writer.add_scalar('ACT-valid/Accuracy', 100 * valid_accu, epoch_i * 3)
+        writer.close()
 
         valid_accus += [valid_accu]
 
@@ -219,12 +229,12 @@ def main():
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
     # parser.add_argument('-data_set', default='data/data_set/2018-06-01#2018-06-15.pt')
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
-    parser.add_argument('-save_model', default='module/tinker-test#cc.pt')
-    parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-07-01 7:00:00')
+    parser.add_argument('-save_model', default='module/2018-06-03.pt')
+    parser.add_argument('-start_time', default='2018-06-01')
+    parser.add_argument('-end_time', default='2018-06-03')
 
     parser.add_argument('-epoch', type=int, default=60)
-    parser.add_argument('-batch_size', type=int, default=32)
+    parser.add_argument('-batch_size', type=int, default=16)
 
     # parser.add_argument('-d_word_vec', type=int, default=512)
     parser.add_argument('-d_model', type=int, default=512)
@@ -297,6 +307,7 @@ def main():
         # train(transformer, train_time, val_time, optimizer, device, opt)
     else:
         train(transformer, training_data, validation_data, optimizer, device, opt)
+
 
 
 if __name__ == '__main__':
