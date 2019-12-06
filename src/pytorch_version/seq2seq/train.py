@@ -28,9 +28,15 @@ def cal_performance(pred, gold, smoothing=False):
     loss = cal_loss(pred, gold, smoothing)
 
     pred = pred.max(1)[1]
+    post = gold.view(-1, 32)[:, -4:]
     gold = gold.contiguous().view(-1)
+
+    post_pre = pred.view(-1, 32)[:, -4:]
+
+    post_correct = post_pre.eq(post).sum().item()
     # print(pred, gold)
     non_pad_mask = gold.ne(Constants.PAD)
+
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 
@@ -229,27 +235,25 @@ def main():
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
     # parser.add_argument('-data_set', default='data/data_set/2018-06-01#2018-06-15.pt')
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
-    parser.add_argument('-save_model', default='module/2018-06-03.pt')
-    parser.add_argument('-start_time', default='2018-06-01')
-    parser.add_argument('-end_time', default='2018-06-03')
+    parser.add_argument('-save_model', default='module/2018-12-30.pt')
+    parser.add_argument('-start_time', default='2018-09-01')
+    parser.add_argument('-end_time', default='2018-10-01')
 
     parser.add_argument('-epoch', type=int, default=60)
-    parser.add_argument('-batch_size', type=int, default=16)
+    parser.add_argument('-batch_size', type=int, default=32)
 
-    # parser.add_argument('-d_word_vec', type=int, default=512)
     parser.add_argument('-d_model', type=int, default=512)
     parser.add_argument('-d_inner_hid', type=int, default=2048)
     parser.add_argument('-d_k', type=int, default=64)
     parser.add_argument('-d_v', type=int, default=64)
 
     parser.add_argument('-n_head', type=int, default=8)
-    parser.add_argument('-n_layers', type=int, default=6)
+    parser.add_argument('-n_layers', type=int, default=1)
     parser.add_argument('-n_warmup_steps', type=int, default=4000)
 
     parser.add_argument('-dropout', type=float, default=0.1)
     parser.add_argument('-embs_share_weight', action='store_true')
     parser.add_argument('-proj_share_weight', action='store_true')
-    parser.add_argument('-src_vocab_size', default=146)
 
     parser.add_argument('-log', default='log/logs.log')
 
@@ -258,7 +262,7 @@ def main():
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-label_smoothing', action='store_true')
     parser.add_argument('-batch_x', default=32)
-    parser.add_argument('-batch_y', default=31)
+    parser.add_argument('-batch_y', default=30)
     parser.add_argument('-train_type', default='name')
 
     opt = parser.parse_args()
