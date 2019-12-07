@@ -22,9 +22,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 writer = SummaryWriter('tfb')
 
 
-def cal_performance(pred, gold, smoothing=False):
+def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False):
     ''' Apply label smoothing if needed '''
 
+    if data_val_ofpa is None:
+        data_val_ofpa = []
     loss = cal_loss(pred, gold, smoothing)
 
     pred = pred.max(1)[1]
@@ -32,9 +34,8 @@ def cal_performance(pred, gold, smoothing=False):
     gold = gold.contiguous().view(-1)
 
     post_pre = pred.view(-1, 32)[:, -5:]
-    soar = [276,512,382,383,539,317,187,556]
     count_soba = 0
-    for i in soar:
+    for i in data_val_ofpa:
         count_soba += gold[gold == i].sum().item()
 
 
@@ -45,7 +46,7 @@ def cal_performance(pred, gold, smoothing=False):
     non_pad_mask = gold.ne(Constants.PAD)
 
     count_soba_pred = 0
-    for i in soar:
+    for i in data_val_ofpa:
         count_soba_pred += pred[gold == i].sum().item()
 
 
@@ -127,8 +128,14 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    ltpa = n_post_correct/n_word_total/6
-    ofpa = n_ofpa_correct/n_ofpa_all
+    if n_post_correct :
+        ltpa = n_post_correct/(n_word_total/6)
+    else:
+        ltpa = 0
+    if n_ofpa_correct:
+        ofpa = n_ofpa_correct/n_ofpa_all
+    else:
+        ofpa = 0
     return loss_per_word, accuracy,ltpa,ofpa
 
 
@@ -142,7 +149,7 @@ def get_position(shape):
     return pos
 
 
-def eval_epoch(model, validation_data, device):
+def eval_epoch(model, validation_data, device,data_val_ofpa):
     ''' Epoch operation in evaluation phase '''
 
     model.eval()
@@ -156,7 +163,7 @@ def eval_epoch(model, validation_data, device):
     with torch.no_grad():
         for batch in tqdm(
                 validation_data, mininterval=2,
-                desc='  - (Validation) ', leave=False):
+                desc='  - (Validating) ', leave=False):
             # prepare data
             src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
             # gold = tgt_seq[:, 1:]
@@ -164,7 +171,7 @@ def eval_epoch(model, validation_data, device):
             tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
             # forward
             pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
-            loss, n_correct, post,ofpa_all,ofpa_correct   = cal_performance(pred, tgt_seq, smoothing=False)
+            loss, n_correct, post,ofpa_all,ofpa_correct = cal_performance(pred, tgt_seq, data_val_ofpa,smoothing=False)
 
             # note keeping
             total_loss += loss.item()
@@ -178,23 +185,33 @@ def eval_epoch(model, validation_data, device):
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    ltpa = n_post_correct/ n_word_total/6
-    ofpa = n_ofpa_correct/n_ofpa_all
+    if n_post_correct :
+        ltpa = n_post_correct/ (n_word_total/6)
+    else:
+        ltpa =0
+    if n_ofpa_correct :
+        ofpa = n_ofpa_correct/n_ofpa_all
+    else:
+        ofpa =0
     return loss_per_word, accuracy,ltpa,ofpa
 
 
-def train(model, training_data, validation_data, optimizer, device, opt):
+def train(model, training_data, validation_data, optimizer, device, opt,data_val_ofpa):
     ''' Start training '''
 
     log_train_file = None
     log_valid_file = None
 
     if opt.log:
-        log_train_file = opt.log + '.train.log'
-        log_valid_file = opt.log + '.valid.log'
+        log_train_file = opt.log + str(time.clock())+ '.train.log'
+        log_valid_file = opt.log + str(time.clock())+ '.valid.log'
 
         print('[Info] Training performance will be written to file: {} and {}'.format(
             log_train_file, log_valid_file))
+
+        with open(log_train_file,'a') as log_tf, open(log_valid_file, 'a') as log_vf:
+            log_tf.write(str(opt)+'\n')
+            log_vf.write(str(opt)+'\n')
 
         # with open(log_train_file, 'w') as log_tf, open(log_valid_file, 'w') as log_vf:
         #     log_tf.write('epoch,loss,ppl,accuracy\n')
@@ -205,25 +222,26 @@ def train(model, training_data, validation_data, optimizer, device, opt):
         print('[ Epoch', epoch_i, ']')
 
         start = time.time()
-        train_loss, train_accu,ltpa,ofpa = train_epoch(model, training_data, optimizer, device, smoothing=opt.label_smoothing)
-        print('  - (Validation) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
+        train_loss, train_accu,t_ltpa,t_ofpa = train_epoch(model, training_data, optimizer, device, smoothing=opt.label_smoothing)
+        t_elapse =( time.time() - start) / 60
+        print('  - (train epoch) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'ltpa: {ltpa1:3.3f} %,ofpa: {ofpa1:3.3f} %,'
               'elapse: {elapse:3.3f} min'.format(
-            loss=train_loss, accu=100 * train_accu, ltpa1=100 * ofpa, ofpa1=100 * ofpa,
-            elapse=(time.time() - start) / 60))
+            loss=train_loss, accu=100 * train_accu, ltpa1=100 * t_ltpa, ofpa1=100 * t_ofpa,
+            elapse=t_elapse))
 
-        writer.add_scalar('ACT-Train/Loss', train_loss, epoch_i * 3)
-        writer.add_scalar('ACT-Train/Accuracy', 100 * train_accu, epoch_i * 3)
+        writer.add_scalar('ACT-Train/Loss', train_loss, epoch_i)
+        writer.add_scalar('ACT-Train/Accuracy', 100 * train_accu, epoch_i)
 
         start = time.time()
-        valid_loss, valid_accu,ltpa,ofpa = eval_epoch(model, validation_data, device)
-        print('  - (Validation) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
+        valid_loss, valid_accu,v_ltpa, v_ofpa = eval_epoch(model, validation_data, device,data_val_ofpa)
+        print('  - (Validation epoch) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'ltpa: {ltpa1:3.3f} %,ofpa: {ofpa1:3.3f} %,'
               'elapse: {elapse:3.3f} min'.format(
-            loss=valid_loss, accu=100 * valid_accu,ltpa1=100*ofpa,ofpa1=100*ofpa,
+            loss=valid_loss, accu=100 * valid_accu,ltpa1=100*v_ltpa,ofpa1=100* v_ofpa,
             elapse=(time.time() - start) / 60))
 
-        writer.add_scalar('ACT-valid/Accuracy', 100 * valid_accu, epoch_i * 3)
+        writer.add_scalar('ACT-valid/Accuracy', 100 * valid_accu, epoch_i)
         writer.close()
 
         valid_accus += [valid_accu]
@@ -246,12 +264,13 @@ def train(model, training_data, validation_data, optimizer, device, opt):
 
         if log_train_file and log_valid_file:
             with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
-                log_tf.write('{epoch},{loss: 8.5f},{ppl: 8.5f},{accu:3.3f}\n'.format(
+                log_tf.write('epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f}, elapse:{t_elapse} end.\n'.format(
                     epoch=epoch_i, loss=train_loss,
-                    ppl=math.exp(min(train_loss, 100)), accu=100 * train_accu))
-                log_vf.write('{epoch},{loss: 8.5f},{ppl: 8.5f},{accu:3.3f}\n'.format(
+                    ppl=math.exp(min(train_loss, 100)),
+                    SOBA=100 * train_accu,LTPA = t_ltpa,OFPA=t_ofpa,t_elapse=t_elapse))
+                log_vf.write('epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f} end.\n'.format(
                     epoch=epoch_i, loss=valid_loss,
-                    ppl=math.exp(min(valid_loss, 100)), accu=100 * valid_accu))
+                    ppl=math.exp(min(valid_loss, 100)), SOBA=100 * valid_accu,LTPA = v_ltpa,OFPA=v_ofpa))
 
 
 def main():
@@ -265,17 +284,17 @@ def main():
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-12-30.pt')
     parser.add_argument('-start_time', default='2018-06-01')
-    parser.add_argument('-end_time', default='2019-02-27')
+    parser.add_argument('-end_time', default='2018-11-01')
 
-    parser.add_argument('-epoch', type=int, default=5)
+    parser.add_argument('-epoch', type=int, default=8)
     parser.add_argument('-batch_size', type=int, default=256)
 
     parser.add_argument('-d_model', type=int, default=512)
     parser.add_argument('-d_inner_hid', type=int, default=2048)
-    parser.add_argument('-d_k', type=int, default=64)
-    parser.add_argument('-d_v', type=int, default=64)
+    parser.add_argument('-d_k', type=int, default=32)
+    parser.add_argument('-d_v', type=int, default=32)
 
-    parser.add_argument('-n_head', type=int, default=8)
+    parser.add_argument('-n_head', type=int, default=1)
     parser.add_argument('-n_layers', type=int, default=4)
     parser.add_argument('-n_warmup_steps', type=int, default=4000)
 
@@ -300,7 +319,7 @@ def main():
     # ========= Loading Dataset =========#
     # opt.max_token_seq_len = data['settings'].max_token_seq_len
 
-    training_data, validation_data, voc_name = ld.get_data_loader(opt, device)
+    training_data, validation_data, voc_name,data_val_ofpa = ld.get_data_loader(opt, device)
     opt.src_vocab_size = voc_name
     opt.tgt_vocab_size = opt.src_vocab_size
     if opt.train_type == 'time':
@@ -338,7 +357,7 @@ def main():
         print("train time dim ")
         # train(transformer, train_time, val_time, optimizer, device, opt)
     else:
-        train(transformer, training_data, validation_data, optimizer, device, opt)
+        train(transformer, training_data, validation_data, optimizer, device, opt,data_val_ofpa)
 
 
 

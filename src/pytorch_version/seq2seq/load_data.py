@@ -104,12 +104,17 @@ def load_data(torch_save_path, start, end, num=0):
 
     data_val = data_load[int((1 - train_rate) * data_len) * -1:]
 
+    data_val_ofpa =data_val['dev_name'].value_counts(ascending=True).head(100)
+    data_val_ofpa = list(data_val_ofpa.to_frame().index)
+    # data_val_ofpa = data_val_ofpa.apply()
+
     data_voc = len(pd.unique(pd.array(data_train['dev_name']))) + len(pd.unique(pd.array(data_val['dev_name'])))
 
     data = {
         'train_data': data_train,
         'val_data': data_val,
-        'voc': data_voc
+        'voc': data_voc,
+        'data_val_ofpa':data_val_ofpa
     }
     path = save_pt_path + start + '#' + end + '.pt'
     path = path.replace(" ", "#").replace(":", "-")
@@ -128,7 +133,7 @@ def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
         tmp.append(train_data_set[step])
         step += 1
         if len(tmp) % batch_x == 0:
-            print("组装中：", step)
+            # print("组装中：", step)
             group_data.append(np.array(tmp))
         if len(tmp) % (batch_y + batch_x) == 0:
             tmp_y = tmp[batch_y * -1:]
@@ -137,6 +142,8 @@ def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
             current_i = current_i + step_i
             step = current_i
     group_data.pop(-1)
+
+    print("data_length",len(group_data))
     return torch.tensor(group_data).to(device), torch.tensor(group_data_y).to(device)
 
 
@@ -196,9 +203,11 @@ def get_data_loader(opt, device):
     dataset_path = 'data/data_set/' + opt.start_time + '#' + opt.end_time + '.pt'
     dataset_path = dataset_path.replace(" ", "#").replace(":", "-")
     if os.path.exists(dataset_path):
-        data_loader = torch.load(dataset_path)['train']
-        data_loader_val = torch.load(dataset_path)['val']
-        voc_name = torch.load(dataset_path)['voc']
+        data_torch_loaded = torch.load(dataset_path)
+        data_loader = data_torch_loaded['train']
+        data_loader_val = data_torch_loaded['val']
+        voc_name = data_torch_loaded['voc']
+        data_val_ofpa = data_torch_loaded['data_val_ofpa']
     else:
         tmp_data_path = save_pt_path + opt.start_time + '#' + opt.end_time + '.pt'
         tmp_data_path = tmp_data_path.replace(" ", "#").replace(":", "-")
@@ -222,14 +231,16 @@ def get_data_loader(opt, device):
                                                       drop_last=True)
 
         voc_name = torch.load(tmp_data_path)['voc']
+        data_val_ofpa = torch.load(tmp_data_path)['data_val_ofpa']
 
         data_loader_p = {
             'train': data_loader,
             'val': data_loader_val,
-            'voc': voc_name
+            'voc': voc_name,
+            'data_val_ofpa':data_val_ofpa
         }
         torch.save(data_loader_p, dataset_path)
-    return data_loader, data_loader_val, voc_name
+    return data_loader, data_loader_val, voc_name,data_val_ofpa
 
 
 def get_time_vac(opt):
