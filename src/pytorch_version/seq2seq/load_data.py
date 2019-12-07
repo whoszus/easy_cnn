@@ -7,6 +7,7 @@ import os
 from dataset import M_Test_data
 import torch.utils.data
 import numpy as np
+from collections import Counter
 
 col_names = ["dev_name", "time"]
 
@@ -85,9 +86,21 @@ def load_data(torch_save_path, start, end, num=0):
     else:
         data_load = load_data_by_date(data_load, start_time, end_time)
     dict_name = get_dict(data_load, start, end)
+
+    df = pd.DataFrame.from_dict(dict_name, orient="index")
+    df.to_csv('data/csv/dic.csv')
     data_len = len(data_load['dev_name'])
     data_load = data_encode_sort(data_load, dict_name)
+
+
+    data_count = data_load['dev_name'].value_counts().to_frame()
+    df= pd.concat([df,data_count])
+    df.to_csv('data/csv/dic_count.csv')
+
     data_train = data_load[:int(train_rate * data_len)]
+
+
+
 
     data_val = data_load[int((1 - train_rate) * data_len) * -1:]
 
@@ -229,5 +242,5 @@ def get_time_vac(opt):
 
 if __name__ == '__main__':
     start_time_str = '2018-06-01'
-    end_time_str = '2018-06-15'
+    end_time_str = '2019-02-27'
     load_data('data/csv/data_train_2_sort.torch', start_time_str, end_time_str)

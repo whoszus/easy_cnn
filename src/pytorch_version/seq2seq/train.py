@@ -28,19 +28,31 @@ def cal_performance(pred, gold, smoothing=False):
     loss = cal_loss(pred, gold, smoothing)
 
     pred = pred.max(1)[1]
-    post = gold.view(-1, 32)[:, -4:]
+    post = gold.view(-1, 32)[:, -5:]
     gold = gold.contiguous().view(-1)
 
-    post_pre = pred.view(-1, 32)[:, -4:]
+    post_pre = pred.view(-1, 32)[:, -5:]
+    soar = [276,512,382,383,539,317,187,556]
+    count_soba = 0
+    for i in soar:
+        count_soba += gold[gold == i].sum().item()
+
+
 
     post_correct = post_pre.eq(post).sum().item()
     # print(pred, gold)
+
     non_pad_mask = gold.ne(Constants.PAD)
+
+    count_soba_pred = 0
+    for i in soar:
+        count_soba_pred += pred[gold == i].sum().item()
+
 
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 
-    return loss, n_correct
+    return loss, n_correct, post_correct, count_soba, count_soba_pred
 
 
 def cal_loss(pred, gold, smoothing):
@@ -74,6 +86,9 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     n_word_total = 0
     n_word_correct = 0
     step = 1
+    n_post_correct = 0
+    n_ofpa_all = 0
+    n_ofpa_correct = 0
 
     for batch in tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # prepare data
@@ -88,7 +103,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
 
         # backward
-        loss, n_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
+        loss, n_correct,post,ofpa_all,ofpa_correct = cal_performance(pred, tgt_seq, smoothing=smoothing)
 
         # print(loss)
         loss.backward()
@@ -106,11 +121,15 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         n_word = non_pad_mask.sum().item()
         n_word_total += n_word
         n_word_correct += n_correct
-        step += 1
+        n_post_correct += post
+        n_ofpa_all += ofpa_all
+        n_ofpa_correct += ofpa_correct
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    return loss_per_word, accuracy
+    ltpa = n_post_correct/n_word_total/6
+    ofpa = n_ofpa_correct/n_ofpa_all
+    return loss_per_word, accuracy,ltpa,ofpa
 
 
 def get_position(shape):
@@ -131,7 +150,9 @@ def eval_epoch(model, validation_data, device):
     total_loss = 0
     n_word_total = 0
     n_word_correct = 0
-
+    n_post_correct =0
+    n_ofpa_all =0
+    n_ofpa_correct = 0
     with torch.no_grad():
         for batch in tqdm(
                 validation_data, mininterval=2,
@@ -143,7 +164,7 @@ def eval_epoch(model, validation_data, device):
             tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
             # forward
             pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
-            loss, n_correct = cal_performance(pred, tgt_seq, smoothing=False)
+            loss, n_correct, post,ofpa_all,ofpa_correct   = cal_performance(pred, tgt_seq, smoothing=False)
 
             # note keeping
             total_loss += loss.item()
@@ -151,10 +172,15 @@ def eval_epoch(model, validation_data, device):
             n_word = non_pad_mask.sum().item()
             n_word_total += n_word
             n_word_correct += n_correct
+            n_post_correct += post
+            n_ofpa_all += ofpa_all
+            n_ofpa_correct += ofpa_correct
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    return loss_per_word, accuracy
+    ltpa = n_post_correct/ n_word_total/6
+    ofpa = n_ofpa_correct/n_ofpa_all
+    return loss_per_word, accuracy,ltpa,ofpa
 
 
 def train(model, training_data, validation_data, optimizer, device, opt):
@@ -179,20 +205,22 @@ def train(model, training_data, validation_data, optimizer, device, opt):
         print('[ Epoch', epoch_i, ']')
 
         start = time.time()
-        train_loss, train_accu = train_epoch(model, training_data, optimizer, device, smoothing=opt.label_smoothing)
-        print('  - (Training)   loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
+        train_loss, train_accu,ltpa,ofpa = train_epoch(model, training_data, optimizer, device, smoothing=opt.label_smoothing)
+        print('  - (Validation) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
+              'ltpa: {ltpa1:3.3f} %,ofpa: {ofpa1:3.3f} %,'
               'elapse: {elapse:3.3f} min'.format(
-            loss=train_loss, accu=100 * train_accu,
+            loss=train_loss, accu=100 * train_accu, ltpa1=100 * ofpa, ofpa1=100 * ofpa,
             elapse=(time.time() - start) / 60))
 
         writer.add_scalar('ACT-Train/Loss', train_loss, epoch_i * 3)
         writer.add_scalar('ACT-Train/Accuracy', 100 * train_accu, epoch_i * 3)
 
         start = time.time()
-        valid_loss, valid_accu = eval_epoch(model, validation_data, device)
+        valid_loss, valid_accu,ltpa,ofpa = eval_epoch(model, validation_data, device)
         print('  - (Validation) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
+              'ltpa: {ltpa1:3.3f} %,ofpa: {ofpa1:3.3f} %,'
               'elapse: {elapse:3.3f} min'.format(
-            loss=valid_loss, accu=100 * valid_accu,
+            loss=valid_loss, accu=100 * valid_accu,ltpa1=100*ofpa,ofpa1=100*ofpa,
             elapse=(time.time() - start) / 60))
 
         writer.add_scalar('ACT-valid/Accuracy', 100 * valid_accu, epoch_i * 3)
@@ -236,11 +264,11 @@ def main():
     # parser.add_argument('-data_set', default='data/data_set/2018-06-01#2018-06-15.pt')
     # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-12-30.pt')
-    parser.add_argument('-start_time', default='2018-09-01')
-    parser.add_argument('-end_time', default='2018-10-01')
+    parser.add_argument('-start_time', default='2018-06-01')
+    parser.add_argument('-end_time', default='2019-02-27')
 
-    parser.add_argument('-epoch', type=int, default=60)
-    parser.add_argument('-batch_size', type=int, default=32)
+    parser.add_argument('-epoch', type=int, default=5)
+    parser.add_argument('-batch_size', type=int, default=256)
 
     parser.add_argument('-d_model', type=int, default=512)
     parser.add_argument('-d_inner_hid', type=int, default=2048)
@@ -248,7 +276,7 @@ def main():
     parser.add_argument('-d_v', type=int, default=64)
 
     parser.add_argument('-n_head', type=int, default=8)
-    parser.add_argument('-n_layers', type=int, default=1)
+    parser.add_argument('-n_layers', type=int, default=4)
     parser.add_argument('-n_warmup_steps', type=int, default=4000)
 
     parser.add_argument('-dropout', type=float, default=0.1)
