@@ -30,10 +30,10 @@ def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False):
     loss = cal_loss(pred, gold, smoothing)
 
     pred = pred.max(1)[1]
-    post = gold.view(-1, 32)[:, -5:]
+    post = gold.view(-1, 32)[:, -4:]
     gold = gold.contiguous().view(-1)
 
-    post_pre = pred.view(-1, 32)[:, -5:]
+    post_pre = pred.view(-1, 32)[:, -4:]
     count_soba = 0
     for i in data_val_ofpa:
         count_soba += gold[gold == i].sum().item()
@@ -186,7 +186,7 @@ def eval_epoch(model, validation_data, device,data_val_ofpa):
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
     if n_post_correct :
-        ltpa = n_post_correct/ (n_word_total/6)
+        ltpa = n_post_correct/ (n_word_total/8)
     else:
         ltpa =0
     if n_ofpa_correct :
@@ -276,26 +276,21 @@ def train(model, training_data, validation_data, optimizer, device, opt,data_val
 def main():
     ''' Main function '''
     parser = argparse.ArgumentParser()
-
-    # parser.add_argument('-data_train', default='data/name_train.pt')
-    # parser.add_argument('-data_val', default='data/name_val.pt')
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
-    # parser.add_argument('-data_set', default='data/data_set/2018-06-01#2018-06-15.pt')
-    # parser.add_argument('-torch_save_data', default='data/origin/2018-06-01#2018-06-15.pt')
     parser.add_argument('-save_model', default='module/2018-12-30.pt')
-    parser.add_argument('-start_time', default='2018-06-01')
-    parser.add_argument('-end_time', default='2018-11-01')
+    parser.add_argument('-start_time', default='2018-07-01')
+    parser.add_argument('-end_time', default='2018-12-30')
 
     parser.add_argument('-epoch', type=int, default=8)
     parser.add_argument('-batch_size', type=int, default=256)
 
     parser.add_argument('-d_model', type=int, default=512)
     parser.add_argument('-d_inner_hid', type=int, default=2048)
-    parser.add_argument('-d_k', type=int, default=32)
-    parser.add_argument('-d_v', type=int, default=32)
+    parser.add_argument('-d_k', type=int, default=64)
+    parser.add_argument('-d_v', type=int, default=64)
 
     parser.add_argument('-n_head', type=int, default=1)
-    parser.add_argument('-n_layers', type=int, default=4)
+    parser.add_argument('-n_layers', type=int, default=1)
     parser.add_argument('-n_warmup_steps', type=int, default=4000)
 
     parser.add_argument('-dropout', type=float, default=0.1)
@@ -308,8 +303,8 @@ def main():
 
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-label_smoothing', action='store_true')
-    parser.add_argument('-batch_x', default=32)
-    parser.add_argument('-batch_y', default=30)
+    parser.add_argument('-batch_x', default=64)
+    parser.add_argument('-batch_y', default=64)
     parser.add_argument('-train_type', default='name')
 
     opt = parser.parse_args()

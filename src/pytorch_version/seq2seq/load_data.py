@@ -91,20 +91,17 @@ def load_data(torch_save_path, start, end, num=0):
     df.to_csv('data/csv/dic.csv')
     data_len = len(data_load['dev_name'])
     data_load = data_encode_sort(data_load, dict_name)
-
-
+    print("数据量：",len(data_load))
     data_count = data_load['dev_name'].value_counts().to_frame()
-    df= pd.concat([df,data_count])
+    v_size = len(data_count)
+    df = pd.concat([df, data_count])
     df.to_csv('data/csv/dic_count.csv')
 
     data_train = data_load[:int(train_rate * data_len)]
 
-
-
-
     data_val = data_load[int((1 - train_rate) * data_len) * -1:]
 
-    data_val_ofpa =data_val['dev_name'].value_counts(ascending=True).head(100)
+    data_val_ofpa = data_val['dev_name'].value_counts(ascending=True).head(int(v_size*0.05))
     data_val_ofpa = list(data_val_ofpa.to_frame().index)
     # data_val_ofpa = data_val_ofpa.apply()
 
@@ -114,7 +111,7 @@ def load_data(torch_save_path, start, end, num=0):
         'train_data': data_train,
         'val_data': data_val,
         'voc': data_voc,
-        'data_val_ofpa':data_val_ofpa
+        'data_val_ofpa': data_val_ofpa
     }
     path = save_pt_path + start + '#' + end + '.pt'
     path = path.replace(" ", "#").replace(":", "-")
@@ -132,10 +129,10 @@ def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
     while step < len(train_data_set):
         tmp.append(train_data_set[step])
         step += 1
-        if len(tmp) % batch_x == 0:
+        if len(tmp) == batch_x:
             # print("组装中：", step)
             group_data.append(np.array(tmp))
-        if len(tmp) % (batch_y + batch_x) == 0:
+        if len(tmp) == (batch_y + batch_x):
             tmp_y = tmp[batch_y * -1:]
             group_data_y.append(np.array(tmp_y))
             tmp = []
@@ -143,7 +140,7 @@ def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
             step = current_i
     group_data.pop(-1)
 
-    print("data_length",len(group_data))
+    print("data_length", len(group_data))
     return torch.tensor(group_data).to(device), torch.tensor(group_data_y).to(device)
 
 
@@ -237,10 +234,10 @@ def get_data_loader(opt, device):
             'train': data_loader,
             'val': data_loader_val,
             'voc': voc_name,
-            'data_val_ofpa':data_val_ofpa
+            'data_val_ofpa': data_val_ofpa
         }
         torch.save(data_loader_p, dataset_path)
-    return data_loader, data_loader_val, voc_name,data_val_ofpa
+    return data_loader, data_loader_val, voc_name, data_val_ofpa
 
 
 def get_time_vac(opt):
@@ -252,6 +249,6 @@ def get_time_vac(opt):
 
 
 if __name__ == '__main__':
-    start_time_str = '2018-06-01'
-    end_time_str = '2019-02-27'
+    start_time_str = '2018-07-01'
+    end_time_str = '2018-08-01'
     load_data('data/csv/data_train_2_sort.torch', start_time_str, end_time_str)
