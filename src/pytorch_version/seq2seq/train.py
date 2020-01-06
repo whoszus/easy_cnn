@@ -279,7 +279,7 @@ def main():
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
     parser.add_argument('-save_model', default='module/2018-12-30.pt')
     parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-12-30')
+    parser.add_argument('-end_time', default='2018-07-31')
 
     parser.add_argument('-epoch', type=int, default=8)
     parser.add_argument('-batch_size', type=int, default=256)
@@ -293,7 +293,7 @@ def main():
     parser.add_argument('-n_layers', type=int, default=1)
     parser.add_argument('-n_warmup_steps', type=int, default=4000)
 
-    parser.add_argument('-dropout', type=float, default=0.1)
+    parser.add_argument('-dropout', type=float, default=0.3)
     parser.add_argument('-embs_share_weight', action='store_true')
     parser.add_argument('-proj_share_weight', action='store_true')
 
@@ -303,8 +303,8 @@ def main():
 
     parser.add_argument('-no_cuda', action='store_true')
     parser.add_argument('-label_smoothing', action='store_true')
-    parser.add_argument('-batch_x', default=64)
-    parser.add_argument('-batch_y', default=64)
+    parser.add_argument('-batch_x', default=32)
+    parser.add_argument('-batch_y', default=31)
     parser.add_argument('-train_type', default='name')
 
     opt = parser.parse_args()

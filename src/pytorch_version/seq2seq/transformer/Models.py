@@ -210,5 +210,5 @@ class Transformer(nn.Module):
         enc_output, *_ = self.encoder(src_seq, src_pos)
         dec_output, *_ = self.decoder(tgt_seq, tgt_pos, src_seq, enc_output)
         seq_logit = self.tgt_word_prj(dec_output) * self.x_logit_scale
-
+        # w = self.decoder.tgt_word_emb.weight.data
         return seq_logit.view(-1, seq_logit.size(2))

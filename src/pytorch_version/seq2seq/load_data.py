@@ -54,15 +54,15 @@ def load_csv_data(torch_save_path):
         print("数据已结构化..读取数据中..")
         return torch.load(torch_save_path)['data_all']
     print("开始加载数据..")
-    data = pd.read_csv(file_path, names=col_names, encoding='utf-8')
-    data = data.drop_duplicates().dropna().reset_index(drop=True)
-    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
+    data = pd.read_csv(file_path, names=["id","dev_name"], encoding='utf-8')
+    #data = data.drop_duplicates().dropna().reset_index(drop=True)
+    #data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
     torch_save_data = {
         'data_all': data
     }
-    torch.save(torch_save_data, torch_save_path)
+    #torch.save(torch_save_data, torch_save_path)
     print("数据加载完毕，去重完毕，去重后数据量：%d" % len(data))
-    return data
+    return torch_save_data
 
 
 def load_data_by_num(data, start, num):
@@ -249,6 +249,8 @@ def get_time_vac(opt):
 
 
 if __name__ == '__main__':
-    start_time_str = '2018-07-01'
-    end_time_str = '2018-08-01'
-    load_data('data/csv/data_train_2_sort.torch', start_time_str, end_time_str)
+   # start_time_str = '2018-07-01'
+   # end_time_str = '2018-08-01'
+    #load_data('data/csv/data_train_2_sort.torch', start_time_str, end_time_str)
+   data = load_csv_data("dd")
+   data = split_data_set(data,8,8,4)
