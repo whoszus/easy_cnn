@@ -143,10 +143,10 @@ def train_epoch(model, training_data, optimizer, device, smoothing, opt):
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
 
-    accra[0] = accra[0] / (n_word_total / opt.batch_size) * 0.5
-    accra[1] = accra[1] / (n_word_total / opt.batch_size) * 0.75
-    accra[2] = accra[2] / (n_word_total / opt.batch_size) * 0.9
-    accra[3] = accra[3] / (n_word_total / opt.batch_size)
+    accra[0] = accra[0] / (n_word_total /opt.batch_y) * 0.5
+    accra[1] = accra[1] / (n_word_total /opt.batch_y) * 0.75
+    accra[2] = accra[2] / (n_word_total /opt.batch_y) * 0.9
+    accra[3] = accra[3] / (n_word_total /opt.batch_y)
 
     return loss_per_word, accuracy, accra
 
@@ -194,10 +194,10 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    accra[0] = accra[0] / (n_word_total / opt.batch_size) * 0.5
-    accra[1] = accra[1] / (n_word_total / opt.batch_size) * 0.75
-    accra[2] = accra[2] / (n_word_total / opt.batch_size) * 0.9
-    accra[3] = accra[3] / (n_word_total / opt.batch_size)
+    accra[0] = accra[0] / (n_word_total /opt.batch_y) * 0.5
+    accra[1] = accra[1] / (n_word_total /opt.batch_y) * 0.75
+    accra[2] = accra[2] / (n_word_total /opt.batch_y) * 0.9
+    accra[3] = accra[3] / (n_word_total /opt.batch_y)
     return loss_per_word, accuracy, accra
 
 
