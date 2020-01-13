@@ -90,7 +90,7 @@ def cal_loss(pred, gold, smoothing):
     return loss
 
 
-def train_epoch(model, training_data, optimizer, device, smoothing):
+def train_epoch(model, training_data, optimizer, device, smoothing, opt):
     ''' Epoch operation in training phase'''
 
     model.train()
@@ -117,7 +117,8 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
 
         # backward
-        loss, n_correct, accrl = cal_performance(pred, tgt_seq, smoothing=smoothing)
+        loss, n_correct, accrl = cal_performance(pred, tgt_seq, smoothing=smoothing, len=opt.batch_y,
+                                                 batch_size=opt.batch_size)
 
         # print(loss)
         loss.backward()
@@ -142,10 +143,10 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
 
-    accra[0] = accra[0] / (n_word_total/32) * 0.5
-    accra[1] = accra[1] / (n_word_total/32) * 0.75
-    accra[2] = accra[2] / (n_word_total/32) * 0.9
-    accra[3] = accra[3] / (n_word_total/32)
+    accra[0] = accra[0] / (n_word_total / opt.batch_size) * 0.5
+    accra[1] = accra[1] / (n_word_total / opt.batch_size) * 0.75
+    accra[2] = accra[2] / (n_word_total / opt.batch_size) * 0.9
+    accra[3] = accra[3] / (n_word_total / opt.batch_size)
 
     return loss_per_word, accuracy, accra
 
@@ -160,7 +161,7 @@ def get_position(shape):
     return pos
 
 
-def eval_epoch(model, validation_data, device, data_val_ofpa):
+def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
     ''' Epoch operation in evaluation phase '''
 
     model.eval()
@@ -193,10 +194,10 @@ def eval_epoch(model, validation_data, device, data_val_ofpa):
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    accra[0] = accra[0] / (n_word_total/32) * 0.5
-    accra[1] = accra[1] / (n_word_total/32) * 0.75
-    accra[2] = accra[2] / (n_word_total/32) * 0.9
-    accra[3] = accra[3] / (n_word_total/32)
+    accra[0] = accra[0] / (n_word_total / opt.batch_size) * 0.5
+    accra[1] = accra[1] / (n_word_total / opt.batch_size) * 0.75
+    accra[2] = accra[2] / (n_word_total / opt.batch_size) * 0.9
+    accra[3] = accra[3] / (n_word_total / opt.batch_size)
     return loss_per_word, accuracy, accra
 
 
@@ -227,7 +228,7 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
 
         start = time.time()
         train_loss, train_accu, accra = train_epoch(model, training_data, optimizer, device,
-                                                    smoothing=opt.label_smoothing)
+                                                    smoothing=opt.label_smoothing, opt=opt)
         t_elapse = (time.time() - start) / 60
         print('  - (train epoch) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'acc50: {acc50:3.3f} %,acc75: {acc75:3.3f} %,acc90: {acc90:3.3f} %,acc100: {acc100:3.3f} %,'
@@ -240,7 +241,7 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
         # writer.add_scalar('ACT-Train/Accuracy', 100 * train_accu, epoch_i)
 
         start = time.time()
-        valid_loss, valid_accu, accra = eval_epoch(model, validation_data, device, data_val_ofpa)
+        valid_loss, valid_accu, accra = eval_epoch(model, validation_data, device, data_val_ofpa, opt=opt)
         print('  - (Validation epoch) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'acc50: {acc50:3.3f} %,acc75: {acc75:3.3f} %,acc90: {acc90:3.3f} %,acc100: {acc100:3.3f} %,'
               'elapse: {elapse:3.3f} min'.format(
