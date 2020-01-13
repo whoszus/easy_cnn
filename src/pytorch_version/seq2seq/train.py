@@ -270,16 +270,17 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
                     print('    - [Info] The checkpoint file has been updated.')
 
         if log_train_file and log_valid_file:
-            with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
-                log_tf.write(
-                    'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f}, elapse:{t_elapse} end.\n'.format(
-                        epoch=epoch_i, loss=train_loss,
-                        ppl=math.exp(min(train_loss, 100)),
-                        SOBA=100 * train_accu, LTPA=t_ltpa, OFPA=t_ofpa, t_elapse=t_elapse))
-                log_vf.write(
-                    'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f} end.\n'.format(
-                        epoch=epoch_i, loss=valid_loss,
-                        ppl=math.exp(min(valid_loss, 100)), SOBA=100 * valid_accu, LTPA=v_ltpa, OFPA=v_ofpa))
+            return
+            # with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
+            #     log_tf.write(
+            #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f}, elapse:{t_elapse} end.\n'.format(
+            #             epoch=epoch_i, loss=train_loss,
+            #             ppl=math.exp(min(train_loss, 100)),
+            #             t_elapse=t_elapse))
+            #     log_vf.write(
+            #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f} end.\n'.format(
+            #             epoch=epoch_i, loss=valid_loss,
+            #             ppl=math.exp(min(valid_loss, 100)), SOBA=100 * valid_accu, LTPA=v_ltpa, OFPA=v_ofpa))
 
 
 def main():
