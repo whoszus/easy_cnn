@@ -143,9 +143,9 @@ def train_epoch(model, training_data, optimizer, device, smoothing, opt):
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
 
-    accra[0] = accra[0] / (n_word_total /opt.batch_y) * 0.5
-    accra[1] = accra[1] / (n_word_total /opt.batch_y) * 0.75
-    accra[2] = accra[2] / (n_word_total /opt.batch_y) * 0.9
+    accra[0] = accra[0] / (n_word_total /opt.batch_y)
+    accra[1] = accra[1] / (n_word_total /opt.batch_y)
+    accra[2] = accra[2] / (n_word_total /opt.batch_y)
     accra[3] = accra[3] / (n_word_total /opt.batch_y)
 
     return loss_per_word, accuracy, accra
@@ -170,6 +170,7 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
     n_word_total = 0
     n_word_correct = 0
     accra = [0, 0, 0, 0]
+    step = 1
     with torch.no_grad():
         for batch in tqdm(
                 validation_data, mininterval=2,
@@ -189,14 +190,15 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
             n_word = non_pad_mask.sum().item()
             n_word_total += n_word
             n_word_correct += n_correct
+            step += 1
             for i in range(4):
                 accra[i] += accrl[i]
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    accra[0] = accra[0] / (n_word_total /opt.batch_y) * 0.5
-    accra[1] = accra[1] / (n_word_total /opt.batch_y) * 0.75
-    accra[2] = accra[2] / (n_word_total /opt.batch_y) * 0.9
+    accra[0] = accra[0] / (n_word_total /opt.batch_y)
+    accra[1] = accra[1] / (n_word_total /opt.batch_y)
+    accra[2] = accra[2] / (n_word_total /opt.batch_y)
     accra[3] = accra[3] / (n_word_total /opt.batch_y)
     return loss_per_word, accuracy, accra
 
@@ -289,7 +291,7 @@ def main():
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
     parser.add_argument('-save_model', default='module/2018-7-30.pt')
     parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-08-30')
+    parser.add_argument('-end_time', default='2018-07-12')
 
     parser.add_argument('-epoch', type=int, default=16)
     parser.add_argument('-batch_size', type=int, default=128)
