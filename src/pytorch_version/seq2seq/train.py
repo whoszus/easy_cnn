@@ -104,7 +104,6 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     n_ofpa_correct = 0
     accra = [0, 0, 0, 0]
 
-
     for batch in tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # prepare data
         src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
@@ -143,11 +142,10 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
 
-    accra[0] = accra[0]/ n_word_total * 0.5
-    accra[1] = accra[1]/ n_word_total * 0.75
-    accra[2] = accra[2]/ n_word_total * 0.9
-    accra[3] = accra[3]/ n_word_total
-
+    accra[0] = accra[0] / (n_word_total/32) * 0.5
+    accra[1] = accra[1] / (n_word_total/32) * 0.75
+    accra[2] = accra[2] / (n_word_total/32) * 0.9
+    accra[3] = accra[3] / (n_word_total/32)
 
     return loss_per_word, accuracy, accra
 
@@ -195,10 +193,10 @@ def eval_epoch(model, validation_data, device, data_val_ofpa):
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-    accra[0] = accra[0]/ n_word_total * 0.5
-    accra[1] = accra[1]/ n_word_total * 0.75
-    accra[2] = accra[2]/ n_word_total * 0.9
-    accra[3] = accra[3]/ n_word_total
+    accra[0] = accra[0] / (n_word_total/32) * 0.5
+    accra[1] = accra[1] / (n_word_total/32) * 0.75
+    accra[2] = accra[2] / (n_word_total/32) * 0.9
+    accra[3] = accra[3] / (n_word_total/32)
     return loss_per_word, accuracy, accra
 
 
@@ -271,17 +269,17 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
                     torch.save(checkpoint, model_name)
                     print('    - [Info] The checkpoint file has been updated.')
 
-        #if log_train_file and log_valid_file:
-            # with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
-            #     log_tf.write(
-            #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f}, elapse:{t_elapse} end.\n'.format(
-            #             epoch=epoch_i, loss=train_loss,
-            #             ppl=math.exp(min(train_loss, 100)),
-            #             t_elapse=t_elapse))
-            #     log_vf.write(
-            #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f} end.\n'.format(
-            #             epoch=epoch_i, loss=valid_loss,
-            #             ppl=math.exp(min(valid_loss, 100)), SOBA=100 * valid_accu, LTPA=v_ltpa, OFPA=v_ofpa))
+        # if log_train_file and log_valid_file:
+        # with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
+        #     log_tf.write(
+        #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f}, elapse:{t_elapse} end.\n'.format(
+        #             epoch=epoch_i, loss=train_loss,
+        #             ppl=math.exp(min(train_loss, 100)),
+        #             t_elapse=t_elapse))
+        #     log_vf.write(
+        #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f} end.\n'.format(
+        #             epoch=epoch_i, loss=valid_loss,
+        #             ppl=math.exp(min(valid_loss, 100)), SOBA=100 * valid_accu, LTPA=v_ltpa, OFPA=v_ofpa))
 
 
 def main():
