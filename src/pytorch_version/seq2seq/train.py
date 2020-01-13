@@ -48,7 +48,7 @@ def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False, len=32, bat
     reshape_pred_90 = pred.view(-1, len)[:, int(len * 0.9):]
 
     gold = gold.contiguous().view(-1)
-    for i in range(len):
+    for i in range(batch_size):
         if reshape_pred_50[i].equal(reshape_gold_50[i]):
             acc_50 += 1
         if reshape_gold_75[i].equal(reshape_pred_75[i]):
@@ -59,10 +59,6 @@ def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False, len=32, bat
             acc_100 += 1
 
     non_pad_mask = gold.ne(Constants.PAD)
-
-    count_soba_pred = 0
-    for i in data_val_ofpa:
-        count_soba_pred += pred[gold == i].sum().item()
 
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
@@ -145,7 +141,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         n_word_total += n_word
         n_word_correct += n_correct
 
-        for i in range(3):
+        for i in range(4):
             accra[i] = (accra[i] + accrl[i]) / 2
 
     loss_per_word = total_loss / n_word_total
@@ -191,7 +187,7 @@ def eval_epoch(model, validation_data, device, data_val_ofpa):
             n_word = non_pad_mask.sum().item()
             n_word_total += n_word
             n_word_correct += n_correct
-            for i in range(3):
+            for i in range(4):
                 accra[i] = (accra[i] + accrl[i]) / 2
 
     loss_per_word = total_loss / n_word_total
@@ -269,8 +265,7 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
                     torch.save(checkpoint, model_name)
                     print('    - [Info] The checkpoint file has been updated.')
 
-        if log_train_file and log_valid_file:
-            return
+        #if log_train_file and log_valid_file:
             # with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
             #     log_tf.write(
             #         'epoch: {epoch},loss: {loss: 8.5f}, {ppl: 8.5f}, SOBA:{SOBA:3.3f}, LTPA: {LTPA:3.3f}, OFPA: {OFPA:3.3f}, elapse:{t_elapse} end.\n'.format(
