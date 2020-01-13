@@ -191,11 +191,14 @@ def eval_epoch(model, validation_data, device, data_val_ofpa):
             n_word_total += n_word
             n_word_correct += n_correct
             for i in range(4):
-                accra[i] = (accra[i] + accrl[i]) / 2
+                accra[i] += accrl[i]
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
-
+    accra[0] = accra[0]/ n_word_total * 0.5
+    accra[1] = accra[1]/ n_word_total * 0.75
+    accra[2] = accra[2]/ n_word_total * 0.9
+    accra[3] = accra[3]/ n_word_total
     return loss_per_word, accuracy, accra
 
 
