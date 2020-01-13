@@ -63,12 +63,7 @@ def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False, len=32, bat
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 
-    accr_50 = acc_50 / batch_size
-    accr_75 = acc_75 / batch_size
-    accr_90 = acc_90 / batch_size
-    accr_100 = acc_100 / batch_size
-
-    accrl = [accr_50, accr_75, accr_90, accr_100]
+    accrl = [acc_50, acc_75, acc_90, acc_100]
     # return loss, n_correct, post_correct, count_soba, count_soba_pred
     return loss, n_correct, accrl
 
@@ -109,6 +104,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
     n_ofpa_correct = 0
     accra = [0, 0, 0, 0]
 
+
     for batch in tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # prepare data
         src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
@@ -142,10 +138,17 @@ def train_epoch(model, training_data, optimizer, device, smoothing):
         n_word_correct += n_correct
 
         for i in range(4):
-            accra[i] = (accra[i] + accrl[i]) / 2
+            accra[i] += accrl[i]
 
     loss_per_word = total_loss / n_word_total
     accuracy = n_word_correct / n_word_total
+
+    accra[0] = accra[0]/ n_word_total * 0.5
+    accra[1] = accra[1]/ n_word_total * 0.75
+    accra[2] = accra[2]/ n_word_total * 0.9
+    accra[3] = accra[3]/ n_word_total
+
+
     return loss_per_word, accuracy, accra
 
 
