@@ -181,7 +181,7 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
             tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
             # forward
             pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
-            loss, n_correct, accrl = cal_performance(pred, tgt_seq, data_val_ofpa, smoothing=False)
+            loss, n_correct, accrl = cal_performance(pred, tgt_seq, data_val_ofpa, smoothing=False,len=opt.batch_y,batch_size=opt.batch_size)
 
             # note keeping
             total_loss += loss.item()
