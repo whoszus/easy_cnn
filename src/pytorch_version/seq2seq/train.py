@@ -37,15 +37,15 @@ def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False, len=32, bat
     #
     pred = pred.max(1)[1]
     # post = gold.view(-1, 32)[:, -4:]
-    reshape_gold_50 = gold.view(-1, len)[:, int(len * 0.5):]
-    reshape_gold_75 = gold.view(-1, len)[:, int(len * 0.75):]
-    reshape_gold_100 = gold.view(-1, len)[:, int(len):]
-    reshape_gold_90 = gold.view(-1, len)[:, int(len * 0.9):]
+    reshape_gold_50 = gold.view(-1, len)[:, :int(len * 0.5)]
+    reshape_gold_75 = gold.view(-1, len)[:, :int(len * 0.75)]
+    reshape_gold_100 = gold.view(-1, len)[:, :int(len)]
+    reshape_gold_90 = gold.view(-1, len)[:, :int(len * 0.9)]
 
-    reshape_pred_50 = pred.view(-1, len)[:, int(len * 0.5):]
-    reshape_pred_75 = pred.view(-1, len)[:, int(len * 0.75):]
-    reshape_pred_100 = pred.view(-1, len)[:, int(len):]
-    reshape_pred_90 = pred.view(-1, len)[:, int(len * 0.9):]
+    reshape_pred_50 = pred.view(-1, len)[:, :int(len * 0.5)]
+    reshape_pred_75 = pred.view(-1, len)[:, :int(len * 0.75)]
+    reshape_pred_100 = pred.view(-1, len)[:, :int(len)]
+    reshape_pred_90 = pred.view(-1, len)[:, :int(len * 0.9)]
 
     gold = gold.contiguous().view(-1)
     for i in range(batch_size):
