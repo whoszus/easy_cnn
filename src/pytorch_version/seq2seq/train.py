@@ -289,14 +289,15 @@ def main():
     ''' Main function '''
     parser = argparse.ArgumentParser()
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
-    parser.add_argument('-save_model', default='module/2018-7-30.pt')
+    parser.add_argument('-save_model', default='module/pathtracing.pt')
     parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-07-12')
+    parser.add_argument('-end_time', default='2018-10-10')
 
-    parser.add_argument('-epoch', type=int, default=16)
+    parser.add_argument('-epoch', type=int, default=5)
     parser.add_argument('-batch_size', type=int, default=128)
+    
 
-    parser.add_argument('-d_model', type=int, default=512)
+    parser.add_argument('-d_model', type=int, default=128)
     parser.add_argument('-d_inner_hid', type=int, default=2048)
     parser.add_argument('-d_k', type=int, default=32)
     parser.add_argument('-d_v', type=int, default=32)
@@ -306,6 +307,7 @@ def main():
     parser.add_argument('-n_warmup_steps', type=int, default=4000)
 
     parser.add_argument('-dropout', type=float, default=0.3)
+
     parser.add_argument('-embs_share_weight', action='store_true')
     parser.add_argument('-proj_share_weight', action='store_true')
 
