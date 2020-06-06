@@ -19,13 +19,11 @@ train_rate = 0.8
 
 
 def data_encode(train_data_X):
-    print("开始转换数据格式》...")
     for name in col_names:
         if name != 'time':
             le = preprocessing.LabelEncoder()
             le.fit(train_data_X[name])
             train_data_X[name] = le.transform(train_data_X[name])
-    print(train_data_X.head(10), train_data_X.shape)
     return train_data_X
 
 
@@ -56,7 +54,7 @@ def load_csv_data(torch_save_path):
     print("开始加载数据..")
     data = pd.read_csv(file_path, names=col_names, encoding='utf-8')
     data = data.drop_duplicates().dropna().reset_index(drop=True)
-    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise") # 转化时间格式
+    data['time'] = pd.to_datetime(data['time'], format='%Y-%m-%d %H:%M:%S', infer_datetime_format=True, errors="raise")
     torch_save_data = {
         'data_all': data
     }
@@ -90,15 +88,15 @@ def load_data(torch_save_path, start, end, num=0):
 
     dict_name = get_dict(data_load, start, end)
 
-    df = pd.DataFrame.from_dict(dict_name, orient="index")
-    df.to_csv('data/csv/dic.csv')
+    # df = pd.DataFrame.from_dict(dict_name, orient="index")
+    # df.to_csv('data/csv/dic.csv')
     data_len = len(data_load['dev_name'])
     data_load = data_encode_sort(data_load, dict_name)
     print("数据量：",len(data_load))
     data_count = data_load['dev_name'].value_counts().to_frame()
     v_size = len(data_count)
-    df = pd.concat([df, data_count])
-    df.to_csv('data/csv/dic_count.csv')
+    # df = pd.concat([df, data_count])
+    # df.to_csv('data/csv/dic_count.csv')
     data_train = data_load[:int(train_rate * data_len)]
 
     data_val = data_load[int((1 - train_rate) * data_len) * -1:]
@@ -121,7 +119,8 @@ def load_data(torch_save_path, start, end, num=0):
     return data
 
 
-def split_data_set(train_data_set, batch_x, batch_y, device, step_i=12):
+def split_data_set(train_data_set, batch_x, batch_y, device):
+    step_i = batch_x/3
     current_i = 1
     step = 0
     tmp = []
@@ -201,44 +200,44 @@ def get_data_loader(opt, device):
 
     dataset_path = 'data/data_set/' + opt.start_time + '#' + opt.end_time + '.pt'
     dataset_path = dataset_path.replace(" ", "#").replace(":", "-")
-    if os.path.exists(dataset_path):
-        data_torch_loaded = torch.load(dataset_path)
-        data_loader = data_torch_loaded['train']
-        data_loader_val = data_torch_loaded['val']
-        voc_name = data_torch_loaded['voc']
-        data_val_ofpa = data_torch_loaded['data_val_ofpa']
+    # if os.path.exists(dataset_path):
+    #     data_torch_loaded = torch.load(dataset_path)
+    #     data_loader = data_torch_loaded['train']
+    #     data_loader_val = data_torch_loaded['val']
+    #     voc_name = data_torch_loaded['voc']
+    #     data_val_ofpa = data_torch_loaded['data_val_ofpa']
+    # else:
+    tmp_data_path = save_pt_path + opt.start_time + '#' + opt.end_time + '.pt'
+    tmp_data_path = tmp_data_path.replace(" ", "#").replace(":", "-")
+
+    if os.path.exists(tmp_data_path):
+        data_train = torch.load(tmp_data_path)['train_data']['dev_name']
+        data_val = torch.load(tmp_data_path)['val_data']['dev_name']
     else:
-        tmp_data_path = save_pt_path + opt.start_time + '#' + opt.end_time + '.pt'
-        tmp_data_path = tmp_data_path.replace(" ", "#").replace(":", "-")
+        data_tmp = load_data(opt.data_all, opt.start_time, opt.end_time)
+        data_train = data_tmp['train_data']['dev_name']
+        data_val = data_tmp['val_data']['dev_name']
 
-        if os.path.exists(tmp_data_path):
-            data_train = torch.load(tmp_data_path)['train_data']['dev_name']
-            data_val = torch.load(tmp_data_path)['val_data']['dev_name']
-        else:
-            data_tmp = load_data(opt.data_all, opt.start_time, opt.end_time)
-            data_train = data_tmp['train_data']['dev_name']
-            data_val = data_tmp['val_data']['dev_name']
+    m_data = split_data_set(data_train, opt.batch_x, opt.batch_y, device)
+    data_set_train = M_Test_data(m_data)
+    data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True,
+                                              drop_last=True)
 
-        m_data = split_data_set(data_train, opt.batch_x, opt.batch_y, device)
-        data_set_train = M_Test_data(m_data)
-        data_loader = torch.utils.data.DataLoader(data_set_train, batch_size=opt.batch_size, shuffle=True,
+    m_data_val = split_data_set(data_val, opt.batch_x, opt.batch_y, device)
+    data_set_val = M_Test_data(m_data_val)
+    data_loader_val = torch.utils.data.DataLoader(data_set_val, batch_size=opt.batch_size, shuffle=True,
                                                   drop_last=True)
 
-        m_data_val = split_data_set(data_val, opt.batch_x, opt.batch_y, device)
-        data_set_val = M_Test_data(m_data_val)
-        data_loader_val = torch.utils.data.DataLoader(data_set_val, batch_size=opt.batch_size, shuffle=True,
-                                                      drop_last=True)
+    voc_name = torch.load(tmp_data_path)['voc']
+    data_val_ofpa = torch.load(tmp_data_path)['data_val_ofpa']
 
-        voc_name = torch.load(tmp_data_path)['voc']
-        data_val_ofpa = torch.load(tmp_data_path)['data_val_ofpa']
-
-        data_loader_p = {
-            'train': data_loader,
-            'val': data_loader_val,
-            'voc': voc_name,
-            'data_val_ofpa': data_val_ofpa
-        }
-        torch.save(data_loader_p, dataset_path)
+    data_loader_p = {
+        'train': data_loader,
+        'val': data_loader_val,
+        'voc': voc_name,
+        'data_val_ofpa': data_val_ofpa
+    }
+    # torch.save(data_loader_p, dataset_path)
     return data_loader, data_loader_val, voc_name, data_val_ofpa
 
 

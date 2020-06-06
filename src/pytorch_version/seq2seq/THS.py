@@ -14,14 +14,14 @@ class Translator(object):
         self.opt = opt
         self.device = torch.device('cuda' if opt.cuda else 'cpu')
 
-        checkpoint = torch.load(opt.model)
+        checkpoint = torch.load('module/d_int.pt.chkpt')
         model_opt = checkpoint['settings']
         self.model_opt = model_opt
 
         model = Transformer(
             model_opt.src_vocab_size,
             model_opt.tgt_vocab_size,
-            model_opt.max_token_seq_len,
+            6,
             tgt_emb_prj_weight_sharing=model_opt.proj_share_weight,
             emb_src_tgt_weight_sharing=model_opt.embs_share_weight,
             d_k=model_opt.d_k,
@@ -135,7 +135,7 @@ class Translator(object):
             src_enc, *_ = self.model.encoder(src_seq, src_pos)
 
             #-- Repeat data for beam search
-            n_bm = self.opt.beam_size
+            n_bm = 1
             n_inst, len_s, d_h = src_enc.size()
             src_seq = src_seq.repeat(1, n_bm).view(n_inst * n_bm, len_s)
             src_enc = src_enc.repeat(1, n_bm, 1).view(n_inst * n_bm, len_s, d_h)
@@ -148,17 +148,15 @@ class Translator(object):
             inst_idx_to_position_map = get_inst_idx_to_tensor_position_map(active_inst_idx_list)
 
             #-- Decode
-            for len_dec_seq in range(1, self.model_opt.max_token_seq_len + 1):
+            for len_dec_seq in range(1, self.model_opt.batch_x + 1):
 
-                active_inst_idx_list = beam_decode_step(
-                    inst_dec_beams, len_dec_seq, src_seq, src_enc, inst_idx_to_position_map, n_bm)
+                active_inst_idx_list = beam_decode_step(inst_dec_beams, len_dec_seq, src_seq, src_enc, inst_idx_to_position_map, n_bm)
 
                 if not active_inst_idx_list:
                     break  # all instances have finished their path to <EOS>
 
-                src_seq, src_enc, inst_idx_to_position_map = collate_active_info(
-                    src_seq, src_enc, inst_idx_to_position_map, active_inst_idx_list)
+                src_seq, src_enc, inst_idx_to_position_map = collate_active_info(src_seq, src_enc, inst_idx_to_position_map, active_inst_idx_list)
 
-        batch_hyp, batch_scores = collect_hypothesis_and_scores(inst_dec_beams, self.opt.n_best)
+        batch_hyp, batch_scores = collect_hypothesis_and_scores(inst_dec_beams, 6)
 
         return batch_hyp, batch_scores
