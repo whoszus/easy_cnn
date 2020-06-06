@@ -1,13 +1,12 @@
-import timeit
+import os
 
+import numpy as np
 import pandas as pd
 import torch
-from sklearn import preprocessing
-import os
-from dataset import M_Test_data
 import torch.utils.data
-import numpy as np
-from collections import Counter
+from sklearn import preprocessing
+
+from dataset import M_Test_data
 
 col_names = ["dev_name", "time"]
 
@@ -38,10 +37,8 @@ def data_encode_sort(train_data_x, dev_name_dict):
 def get_dict(train_data_x, start, end):
     dict_path_s = dict_path + start + '#' + end + '.pt'
     dict_path_s = dict_path_s.replace(" ", "#").replace(":", "-")
-    if os.path.exists(dict_path_s):
-        return torch.load(dict_path_s)
     count_set = pd.unique(pd.array(train_data_x['dev_name']))
-    dev_name_dict = {w: index + 1 for index, w in enumerate(count_set)}
+    dev_name_dict = {w: index + 3 for index, w in enumerate(count_set)}
     torch.save(dev_name_dict, dict_path_s)
     return dev_name_dict
 
@@ -88,11 +85,11 @@ def load_data(torch_save_path, start, end, num=0):
 
     dict_name = get_dict(data_load, start, end)
 
-    # df = pd.DataFrame.from_dict(dict_name, orient="index")
-    # df.to_csv('data/csv/dic.csv')
+    df = pd.DataFrame.from_dict(dict_name, orient="index")
+    df.to_csv('data/csv/dic.csv')
     data_len = len(data_load['dev_name'])
     data_load = data_encode_sort(data_load, dict_name)
-    print("数据量：",len(data_load))
+    print("数据量：", len(data_load))
     data_count = data_load['dev_name'].value_counts().to_frame()
     v_size = len(data_count)
     # df = pd.concat([df, data_count])
@@ -101,7 +98,7 @@ def load_data(torch_save_path, start, end, num=0):
 
     data_val = data_load[int((1 - train_rate) * data_len) * -1:]
 
-    data_val_ofpa = data_val['dev_name'].value_counts(ascending=True).head(int(v_size*0.05))
+    data_val_ofpa = data_val['dev_name'].value_counts(ascending=True).head(int(v_size * 0.05))
     data_val_ofpa = list(data_val_ofpa.to_frame().index)
     # data_val_ofpa = data_val_ofpa.apply()
 
@@ -120,23 +117,28 @@ def load_data(torch_save_path, start, end, num=0):
 
 
 def split_data_set(train_data_set, batch_x, batch_y, device):
-    step_i = batch_x/3
+    step_i = int(batch_x / 3)
     current_i = 1
     step = 0
     tmp = []
+    tmp.append(1)
     group_data = []
     group_data_y = []
     train_data_set = train_data_set.tolist()
     while step < len(train_data_set):
         tmp.append(train_data_set[step])
         step += 1
-        if len(tmp) == batch_x:
-            # print("组装中：", step)
-            group_data.append(np.array(tmp))
-        if len(tmp) == (batch_y + batch_x):
-            tmp_y = tmp[batch_y * -1:]
+        if len(tmp) + 1 == batch_x:
+            x = tmp.copy()
+            x.append(2)
+            group_data.append(np.array(x))
+        if len(tmp) == (batch_y + batch_x-1):
+            tmp_y = tmp[(batch_y) * -1:]
+            tmp_y[0] = 1
+            tmp_y[-1] = 2
             group_data_y.append(np.array(tmp_y))
             tmp = []
+            tmp.append(1)
             current_i = current_i + step_i
             step = current_i
     group_data.pop(-1)

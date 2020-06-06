@@ -1,16 +1,16 @@
 ''' Translate input text with trained model. '''
 
-import torch
 import argparse
+
+import torch
 from tqdm import tqdm
 
+import Translator_s
 import transformer.Constants as Constants
 from transformer.Models import Transformer
-import Translator_s
 
 
 def load_model(opt, device):
-
     checkpoint = torch.load(opt.model, map_location=device)
     model_opt = checkpoint['settings']
 
@@ -34,7 +34,7 @@ def load_model(opt, device):
 
     model.load_state_dict(checkpoint['model'])
     print('[Info] Trained model state loaded.')
-    return model 
+    return model
 
 
 def main():
@@ -56,21 +56,22 @@ def main():
     SRC, TRG = data['vocab']['src'], data['vocab']['trg']
 
     test_loader = Dataset(examples=data['test'], fields={'src': SRC, 'trg': TRG})
-    
+
     device = torch.device('cuda')
     translator = Translator_s.to(device)
 
     with open(opt.output, 'w') as f:
         for example in tqdm(test_loader, mininterval=2, desc='  - (Test)', leave=False):
-            #print(' '.join(example.src))
+            # print(' '.join(example.src))
             src_seq = [SRC.vocab.stoi.get(word, unk_idx) for word in example.src]
             pred_seq = translator.translate_sentence(torch.LongTensor([src_seq]).to(device))
             pred_line = ' '.join(TRG.vocab.itos[idx] for idx in pred_seq)
             pred_line = pred_line.replace(Constants.BOS_WORD, '').replace(Constants.EOS_WORD, '')
-            #print(pred_line)
+            # print(pred_line)
             f.write(pred_line.strip() + '\n')
 
     print('[Info] Finished.')
+
 
 if __name__ == "__main__":
     '''

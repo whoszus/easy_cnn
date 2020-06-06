@@ -1,16 +1,18 @@
-import torch
-import Translator as tsl
 import pandas as pd
+import torch
 
-csv_toPredict_noLabel =  "data/csv/toPredict_noLabel.csv"
-col_toPredict = ["id_sample","id_road","time"]
+import Translator as tsl
+
+csv_toPredict_noLabel = "data/csv/toPredict_noLabel.csv"
+col_toPredict = ["id_sample", "id_road", "time"]
 csv_toPredict_train_TTI = "data/csv/toPredict_train_TTI.csv"
-col_train = ["id_road",	"TTI",	"speed",	"time"]
+col_train = ["id_road", "TTI", "speed", "time"]
 
 opt = torch.load("data/dict/opt.torch")["opt"]
 
-def get_csv(file_path,col_names):
-    data = pd.read_csv(file_path, names=col_names, encoding='utf-8',skiprows=1)
+
+def get_csv(file_path, col_names):
+    data = pd.read_csv(file_path, names=col_names, encoding='utf-8', skiprows=1)
     return data
 
 
@@ -21,13 +23,11 @@ def group_data(data):
     input = []
     for tti in data:
         s.append(int(tti))
-        if i%6 ==0:
+        if i % 6 == 0:
             input.append(s)
             s = []
-        i+=1
+        i += 1
     return input
-
-
 
 
 if __name__ == '__main__':
@@ -53,5 +53,5 @@ if __name__ == '__main__':
     tgt_pos = ss["tgt_pos"]
     checkpoint = torch.load('module/d_int.pt_accu_99.928.chkpt')
     translator = tsl.Translator(checkpoint)
-    batch_hyp, batch_scores = translator.translate_batch(src_seq,src_pos)
+    batch_hyp, batch_scores = translator.translate_batch(src_seq, src_pos)
     print(batch_hyp)

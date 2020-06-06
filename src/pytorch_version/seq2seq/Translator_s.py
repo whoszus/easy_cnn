@@ -3,14 +3,14 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformer.Models import Transformer, get_pad_mask, get_subsequent_mask
+
+from transformer.Models import get_subsequent_mask
 
 
 class Translator(nn.Module):
     ''' Load a trained model and translate in beam search fashion. '''
 
     def __init__(self, model, beam_size=5, max_seq_len=6):
-
 
         super(Translator, self).__init__()
 
@@ -31,12 +31,10 @@ class Translator(nn.Module):
             'len_map',
             torch.arange(1, max_seq_len + 1, dtype=torch.long).unsqueeze(0))
 
-
     def _model_decode(self, trg_seq, enc_output, src_mask):
         trg_mask = get_subsequent_mask(trg_seq)
         dec_output, *_ = self.model.decoder(trg_seq, trg_mask, enc_output, src_mask)
         return F.softmax(self.model.trg_word_prj(dec_output), dim=-1)
-
 
     def _get_init_state(self, src_seq, src_mask):
         beam_size = self.beam_size
@@ -51,7 +49,6 @@ class Translator(nn.Module):
         gen_seq[:, 1] = best_k_idx[0]
         enc_output = enc_output.repeat(beam_size, 1, 1)
         return enc_output, gen_seq, scores
-
 
     def _get_the_best_score_and_idx(self, gen_seq, dec_output, scores, step):
         assert len(scores.size()) == 1
@@ -78,8 +75,7 @@ class Translator(nn.Module):
 
         return gen_seq, scores
 
-
-    def translate_sentence(self, src_seq,src_mask):
+    def translate_sentence(self, src_seq, src_mask):
         # Only accept batch size equals to 1 in this function.
         # TODO: expand to batch operation.
         assert src_seq.size(0) == 1
@@ -89,8 +85,8 @@ class Translator(nn.Module):
         with torch.no_grad():
             enc_output, gen_seq, scores = self._get_init_state(src_seq, src_mask)
 
-            ans_idx = 0   # default
-            for step in range(2, max_seq_len):    # decode up to max length
+            ans_idx = 0  # default
+            for step in range(2, max_seq_len):  # decode up to max length
                 dec_output = self._model_decode(gen_seq[:, :step], enc_output, src_mask)
                 gen_seq, scores = self._get_the_best_score_and_idx(gen_seq, dec_output, scores, step)
 

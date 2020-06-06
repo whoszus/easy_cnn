@@ -4,8 +4,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformer.Models import Transformer
 from transformer.Beam import Beam
+from transformer.Models import Transformer
+
 
 class Translator(object):
     ''' Load with trained model and handle the beam search '''
@@ -130,32 +131,35 @@ class Translator(object):
             return all_hyp, all_scores
 
         with torch.no_grad():
-            #-- Encode
+            # -- Encode
             src_seq, src_pos = src_seq.to(self.device), src_pos.to(self.device)
             src_enc, *_ = self.model.encoder(src_seq, src_pos)
 
-            #-- Repeat data for beam search
+            # -- Repeat data for beam search
             n_bm = 1
             n_inst, len_s, d_h = src_enc.size()
             src_seq = src_seq.repeat(1, n_bm).view(n_inst * n_bm, len_s)
             src_enc = src_enc.repeat(1, n_bm, 1).view(n_inst * n_bm, len_s, d_h)
 
-            #-- Prepare beams
+            # -- Prepare beams
             inst_dec_beams = [Beam(n_bm, device=self.device) for _ in range(n_inst)]
 
-            #-- Bookkeeping for active or not
+            # -- Bookkeeping for active or not
             active_inst_idx_list = list(range(n_inst))
             inst_idx_to_position_map = get_inst_idx_to_tensor_position_map(active_inst_idx_list)
 
-            #-- Decode
+            # -- Decode
             for len_dec_seq in range(1, self.model_opt.batch_x + 1):
 
-                active_inst_idx_list = beam_decode_step(inst_dec_beams, len_dec_seq, src_seq, src_enc, inst_idx_to_position_map, n_bm)
+                active_inst_idx_list = beam_decode_step(inst_dec_beams, len_dec_seq, src_seq, src_enc,
+                                                        inst_idx_to_position_map, n_bm)
 
                 if not active_inst_idx_list:
                     break  # all instances have finished their path to <EOS>
 
-                src_seq, src_enc, inst_idx_to_position_map = collate_active_info(src_seq, src_enc, inst_idx_to_position_map, active_inst_idx_list)
+                src_seq, src_enc, inst_idx_to_position_map = collate_active_info(src_seq, src_enc,
+                                                                                 inst_idx_to_position_map,
+                                                                                 active_inst_idx_list)
 
         batch_hyp, batch_scores = collect_hypothesis_and_scores(inst_dec_beams, 6)
 

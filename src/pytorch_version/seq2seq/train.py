@@ -1,32 +1,32 @@
 import argparse
 import time
-from tqdm import tqdm
+
+import pandas as pd
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data
+# from tensorboardX import SummaryWriter
+from sklearn.metrics import mean_absolute_error as mae
+from tqdm import tqdm
+
+import load_data as ld
 import transformer.Constants as Constants
 from transformer.Models import Transformer
 from transformer.Optim import ScheduledOptim
-# from tensorboardX import SummaryWriter
-from sklearn import preprocessing
-from sklearn.metrics import mean_absolute_error as mae
-
-import load_data as ld
-import numpy
-import pandas as pd
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 # le = preprocessing.LabelEncoder()
 # le.classes_ = torch.load("./data/dict/le.torch")["le"]
 
 # writer = SummaryWriter('tfb')
 
-res = torch.load("./data/dict/reverse_dict_ffs.torch")["reverse_dict_ffs"]
+# res = torch.load("./data/dict/reverse_dict_ffs.torch")["reverse_dict_ffs"]
 
 
 def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False, len=32, batch_size=128):
-
     loss = cal_loss(pred, gold, smoothing)
 
     pred = pred.max(1)[1]
@@ -36,17 +36,16 @@ def cal_performance(pred, gold, data_val_ofpa=None, smoothing=False, len=32, bat
     n_correct = pred.eq(gold)
     n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 
-    pred_org = pd.Series(pred.to(torch.device('cpu'))).map(res)
-    pred_org.fillna(10, inplace=True)
-    gold_org = pd.Series(gold.to(torch.device('cpu'))).map(res)
-    gold_org.fillna(10, inplace=True)
-
+    # pred_org = pd.Series(pred.to(torch.device('cpu'))).map(res)
+    # pred_org.fillna(10, inplace=True)
+    # gold_org = pd.Series(gold.to(torch.device('cpu'))).map(res)
+    # gold_org.fillna(10, inplace=True)
 
     # pred_org = pred.to(torch.device('cpu')).numpy()
     # gold_org = gold.to(torch.device('cpu')).numpy()
-    m = mae(pred_org.to_numpy(), gold_org.to_numpy())
+    # m = mae(pred_org.to_numpy(), gold_org.to_numpy())
 
-    return loss, n_correct, m
+    return loss, n_correct, 1
 
 
 def cal_loss(pred, gold, smoothing):
@@ -82,9 +81,8 @@ def train_epoch(model, training_data, optimizer, device, smoothing, opt):
     n_tot = 0
     n_mae_tot = 0
 
-
     for batch in tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
-        n_tot+=1
+        n_tot += 1
         # prepare data
         src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
         #
@@ -92,19 +90,19 @@ def train_epoch(model, training_data, optimizer, device, smoothing, opt):
         tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
         # gold = tgt_seq[:, 1:]
         torch_save = {
-            "src_seq":src_seq,
-            "tgt_seq":tgt_seq,
-            "src_pos":src_pos,
-            "tgt_pos":tgt_pos
+            "src_seq": src_seq,
+            "tgt_seq": tgt_seq,
+            "src_pos": src_pos,
+            "tgt_pos": tgt_pos
         }
-        torch.save(torch_save,"sss.s")
+        torch.save(torch_save, "sss.s")
         # forward
         optimizer.zero_grad()
         pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
 
         # backward
         loss, n_correct, mae = cal_performance(pred, tgt_seq, smoothing=smoothing, len=opt.batch_y,
-                                                 batch_size=opt.batch_size)
+                                               batch_size=opt.batch_size)
 
         # print(loss)
         loss.backward()
@@ -127,6 +125,7 @@ def train_epoch(model, training_data, optimizer, device, smoothing, opt):
     s_mae = n_mae_tot / n_tot
     return loss_per_word, accuracy, s_mae
 
+
 def get_position(shape):
     pos = []
     pos_i = []
@@ -148,7 +147,7 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
     n_tot = 0
     n_mae_tot = 0
     with torch.no_grad():
-        for batch in tqdm( validation_data, mininterval=2, desc='  - (Validating) ', leave=False):
+        for batch in tqdm(validation_data, mininterval=2, desc='  - (Validating) ', leave=False):
             # prepare data
             n_tot += 1
             src_seq, tgt_seq = map(lambda x: x.to(device).to(torch.int64), batch)
@@ -157,7 +156,8 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
             tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
             # forward
             pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
-            loss, n_correct, mae = cal_performance(pred, tgt_seq, data_val_ofpa, smoothing=False,len=opt.batch_y,batch_size=opt.batch_size)
+            loss, n_correct, mae = cal_performance(pred, tgt_seq, data_val_ofpa, smoothing=False, len=opt.batch_y,
+                                                   batch_size=opt.batch_size)
 
             # note keeping
             total_loss += loss.item()
@@ -172,6 +172,7 @@ def eval_epoch(model, validation_data, device, data_val_ofpa, opt):
     s_mae = n_mae_tot / n_tot
 
     return loss_per_word, accuracy, s_mae
+
 
 def train(model, training_data, validation_data, optimizer, device, opt, data_val_ofpa):
     ''' Start training '''
@@ -200,12 +201,12 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
 
         start = time.time()
         train_loss, train_accu, mae = train_epoch(model, training_data, optimizer, device,
-                                                    smoothing=opt.label_smoothing, opt=opt)
+                                                  smoothing=opt.label_smoothing, opt=opt)
         t_elapse = (time.time() - start) / 60
         print('  - (train epoch) loss: {loss: 8.5f}, accuracy: {accu:3.3f} %, ' \
               'mae: {mae:3.3f} %,'
               'elapse: {elapse:3.3f} min'.format(
-            loss=train_loss, accu=100 * train_accu,mae=mae ,
+            loss=train_loss, accu=100 * train_accu, mae=mae,
             elapse=t_elapse))
         #
         # writer.add_scalar('ACT-Train/Loss', train_loss, epoch_i)
@@ -235,7 +236,7 @@ def train(model, training_data, validation_data, optimizer, device, opt, data_va
                 model_name = opt.save_model + '_accu_{accu:3.3f}.chkpt'.format(accu=100 * valid_accu)
                 # torch.save(checkpoint, model_name)
                 #
-                torch.save(model,model_name)
+                torch.save(model, model_name)
             elif opt.save_mode == 'best':
                 model_name = opt.save_model + '.chkpt'
                 if valid_accu >= max(valid_accus):
@@ -266,7 +267,6 @@ def main():
 
     parser.add_argument('-epoch', type=int, default=4)
     parser.add_argument('-batch_size', type=int, default=256)
-    
 
     parser.add_argument('-d_model', type=int, default=1024)
     parser.add_argument('-d_inner_hid', type=int, default=2048)
@@ -313,9 +313,9 @@ def main():
 
     print(opt)
     opt_save = {
-        "opt":opt
+        "opt": opt
     }
-    torch.save(opt_save,"data/dict/opt.torch")
+    torch.save(opt_save, "data/dict/opt.torch")
     transformer = Transformer(
         opt.src_vocab_size,
         opt.tgt_vocab_size,
