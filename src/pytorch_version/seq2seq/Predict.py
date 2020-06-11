@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 
 import Translator as tsl
+# import Translator_tk as tsl
 
 csv_toPredict_noLabel = "data/csv/toPredict_noLabel.csv"
 col_toPredict = ["id_sample", "id_road", "time"]
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     tgt_seq = ss["tgt_seq"]
     src_pos = ss["src_pos"]
     tgt_pos = ss["tgt_pos"]
-    checkpoint = torch.load('module/d_int.pt_accu_99.928.chkpt')
+    checkpoint = torch.load('module/d_int.pt_accu_93.437.chkpt')
     translator = tsl.Translator(checkpoint)
     batch_hyp, batch_scores = translator.translate_batch(src_seq, src_pos)
     print(batch_hyp)

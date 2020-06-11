@@ -1,4 +1,3 @@
 PAD = 0
-UNK = 1
-BOS = 2
-EOS = 3
+BOS = 1
+EOS = 2

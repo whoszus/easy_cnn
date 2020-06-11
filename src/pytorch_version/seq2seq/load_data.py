@@ -121,24 +121,28 @@ def split_data_set(train_data_set, batch_x, batch_y, device):
     current_i = 1
     step = 0
     tmp = []
-    tmp.append(1)
+    # tmp.append(1)
     group_data = []
     group_data_y = []
     train_data_set = train_data_set.tolist()
-    while step < len(train_data_set):
-        tmp.append(train_data_set[step])
+    node_last = 1
+    while step+1 < len(train_data_set):
         step += 1
-        if len(tmp) + 1 == batch_x:
+        if train_data_set[step] == node_last:
+            continue
+        node_last = train_data_set[step]
+        tmp.append(train_data_set[step])
+        if len(tmp) == batch_x:
             x = tmp.copy()
-            x.append(2)
+            # x.append(2)
             group_data.append(np.array(x))
-        if len(tmp) == (batch_y + batch_x-1):
+        if len(tmp) == (batch_y + batch_x):
             tmp_y = tmp[(batch_y) * -1:]
-            tmp_y[0] = 1
-            tmp_y[-1] = 2
+            # tmp_y[0] = 1
+            # tmp_y[-1] = 2
             group_data_y.append(np.array(tmp_y))
             tmp = []
-            tmp.append(1)
+            # tmp.append(1)
             current_i = current_i + step_i
             step = current_i
     group_data.pop(-1)

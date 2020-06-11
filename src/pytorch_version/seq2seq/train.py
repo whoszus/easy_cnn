@@ -89,13 +89,13 @@ def train_epoch(model, training_data, optimizer, device, smoothing, opt):
         src_pos = torch.tensor(get_position(src_seq.shape)).to(device)
         tgt_pos = torch.tensor(get_position(tgt_seq.shape)).to(device)
         # gold = tgt_seq[:, 1:]
-        torch_save = {
-            "src_seq": src_seq,
-            "tgt_seq": tgt_seq,
-            "src_pos": src_pos,
-            "tgt_pos": tgt_pos
-        }
-        torch.save(torch_save, "sss.s")
+        # torch_save = {
+        #     "src_seq": src_seq,
+        #     "tgt_seq": tgt_seq,
+        #     "src_pos": src_pos,
+        #     "tgt_pos": tgt_pos
+        # }
+        # torch.save(torch_save, "sss.s")
         # forward
         optimizer.zero_grad()
         pred = model(src_seq, src_pos, tgt_seq, tgt_pos)
@@ -263,13 +263,13 @@ def main():
     parser.add_argument('-data_all', default='data/csv/data_train_2_sort.torch')
     parser.add_argument('-save_model', default='module/d_int.pt')
     parser.add_argument('-start_time', default='2018-07-01')
-    parser.add_argument('-end_time', default='2018-09-01')
+    parser.add_argument('-end_time', default='2018-08-05')
 
     parser.add_argument('-epoch', type=int, default=4)
-    parser.add_argument('-batch_size', type=int, default=256)
+    parser.add_argument('-batch_size', type=int, default=1)
 
-    parser.add_argument('-d_model', type=int, default=1024)
-    parser.add_argument('-d_inner_hid', type=int, default=2048)
+    parser.add_argument('-d_model', type=int, default=64)
+    parser.add_argument('-d_inner_hid', type=int, default=128)
     parser.add_argument('-d_k', type=int, default=32)
     parser.add_argument('-d_v', type=int, default=32)
 

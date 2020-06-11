@@ -6,12 +6,6 @@ import torch.nn as nn
 import transformer.Constants as Constants
 from transformer.Layers import EncoderLayer, DecoderLayer
 
-__author__ = "Yu-Hsiang Huang"
-
-
-def get_pad_mask(seq, pad_idx):
-    return (seq != pad_idx).unsqueeze(-2)
-
 
 def get_non_pad_mask(seq):
     assert seq.dim() == 2
@@ -54,8 +48,7 @@ def get_subsequent_mask(seq):
     ''' For masking out the subsequent info. '''
 
     sz_b, len_s = seq.size()
-    subsequent_mask = torch.triu(
-        torch.ones((len_s, len_s), device=seq.device, dtype=torch.uint8), diagonal=1)
+    subsequent_mask = torch.triu(torch.ones((len_s, len_s), device=seq.device, dtype=torch.uint8), diagonal=1)
     subsequent_mask = subsequent_mask.unsqueeze(0).expand(sz_b, -1, -1)  # b x ls x ls
 
     return subsequent_mask

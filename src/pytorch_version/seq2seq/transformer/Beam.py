@@ -27,11 +27,11 @@ class Beam():
 
         # The outputs at each time-step.
         self.next_ys = [torch.full((size,), Constants.PAD, dtype=torch.long, device=device)]
-        self.next_ys[0][0] = Constants.BOS
+        # self.next_ys[0][0] = Constants.BOS
 
-    def get_current_state(self):
+    def get_current_state(self,f_s):
         "Get the outputs for the current timestep."
-        return self.get_tentative_hypothesis()
+        return self.get_tentative_hypothesis(f_s)
 
     def get_current_origin(self):
         "Get the backpointers for the current timestep."
@@ -52,10 +52,13 @@ class Beam():
             beam_lk = word_prob[0]
 
         flat_beam_lk = beam_lk.view(-1)
-
-        best_scores, best_scores_id = flat_beam_lk.topk(self.size, 0, True, True)  # 1st sort
-        best_scores, best_scores_id = flat_beam_lk.topk(self.size, 0, True, True)  # 2nd sort
-
+        # flat_beam_lk = flat_beam_lk.masked_select(flat_beam_lk.ne(0))
+        best_scores, best_scores_id = flat_beam_lk.topk(self.size, 0, True, True)
+        zero_size = best_scores.masked_select(best_scores.eq(0)).size()
+        if zero_size[0]>0:
+            best_scores, best_scores_id = flat_beam_lk.topk(self.size+1, 0, True, True)
+            best_scores = best_scores[best_scores!=0]
+            best_scores_id = torch.cat([best_scores_id[0:0], best_scores_id[1:]])
         self.all_scores.append(self.scores)
         self.scores = best_scores
 
@@ -66,11 +69,11 @@ class Beam():
         self.next_ys.append(best_scores_id - prev_k * num_words)
 
         # End condition is when top-of-beam is EOS.
-        if self.next_ys[-1][0].item() == Constants.EOS:
-            self._done = True
-            self.all_scores.append(self.scores)
-
-        return self._done
+        # if self.next_ys[-1][0].item() == Constants.EOS:
+        #     self._done = True
+        #     self.all_scores.append(self.scores)
+        #
+        # return self._done
 
     def sort_scores(self):
         "Sort the scores."
@@ -81,10 +84,11 @@ class Beam():
         scores, ids = self.sort_scores()
         return scores[1], ids[1]
 
-    def get_tentative_hypothesis(self):
+    def get_tentative_hypothesis(self,f_s):
         "Get the decoded sequence for the current timestep."
 
         if len(self.next_ys) == 1:
+            self.next_ys[0][0] = f_s
             dec_seq = self.next_ys[0].unsqueeze(1)
         else:
             _, keys = self.sort_scores()
