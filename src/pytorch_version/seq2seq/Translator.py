@@ -3,142 +3,109 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from transformer.Models import Transformer, get_pad_mask, get_subsequent_mask
 
-from transformer.Beam import Beam
 
-
-class Translator(object):
-    ''' Load with trained model and handle the beam search '''
+class Translator(nn.Module):
+    ''' Load a trained model and translate in beam search fashion. '''
 
     def __init__(self, model):
-        self.device = torch.device('cuda')
 
-        model.word_prob_prj = nn.LogSoftmax(dim=1)
 
-        model = model.to(self.device)
+        super(Translator, self).__init__()
+
+        self.alpha = 0.7
+        self.beam_size = 5
+        self.max_seq_len = 32
+        self.src_pad_idx = 0
+        self.trg_bos_idx = 1
+        self.trg_eos_idx = 2
 
         self.model = model
         self.model.eval()
+        self.trg_pad_idx = 0
+        self.register_buffer('init_seq', torch.LongTensor([[self.trg_bos_idx]]))
+        self.register_buffer(
+            'blank_seqs',
+            torch.full((self.beam_size, self.max_seq_len), self.trg_pad_idx, dtype=torch.long))
+        self.blank_seqs[:, 0] = self.trg_bos_idx
+        self.register_buffer(
+            'len_map',
+            torch.arange(1, self.max_seq_len + 1, dtype=torch.long).unsqueeze(0))
 
-    def translate_batch(self, src_seq, src_pos):
-        ''' Translation work in one batch '''
 
-        def get_inst_idx_to_tensor_position_map(inst_idx_list):
-            ''' Indicate the position of an instance in a tensor. '''
-            return {inst_idx: tensor_position for tensor_position, inst_idx in enumerate(inst_idx_list)}
+    def _model_decode(self, trg_seq, enc_output, src_mask):
+        trg_mask = get_subsequent_mask(trg_seq)
+        dec_output, *_ = self.model.decoder(trg_seq, trg_mask, enc_output, src_mask)
+        return F.softmax(self.model.trg_word_prj(dec_output), dim=-1)
 
-        def collect_active_part(beamed_tensor, curr_active_inst_idx, n_prev_active_inst, n_bm):
-            ''' Collect tensor parts associated to active instances. '''
 
-            _, *d_hs = beamed_tensor.size()
-            n_curr_active_inst = len(curr_active_inst_idx)
-            new_shape = (n_curr_active_inst * n_bm, *d_hs)
+    def _get_init_state(self, src_seq, src_mask):
+        beam_size = self.beam_size
 
-            beamed_tensor = beamed_tensor.view(n_prev_active_inst, -1)
-            beamed_tensor = beamed_tensor.index_select(0, curr_active_inst_idx)
-            beamed_tensor = beamed_tensor.view(*new_shape)
+        enc_output, *_ = self.model.encoder(src_seq, src_mask)
+        dec_output = self._model_decode(self.init_seq, enc_output, src_mask)
 
-            return beamed_tensor
+        best_k_probs, best_k_idx = dec_output[:, -1, :].topk(beam_size)
 
-        def collate_active_info(src_seq, src_enc, inst_idx_to_position_map, active_inst_idx_list):
-            # Sentences which are still active are collected,
-            # so the decoder will not run on completed sentences.
-            n_prev_active_inst = len(inst_idx_to_position_map)
-            active_inst_idx = [inst_idx_to_position_map[k] for k in active_inst_idx_list]
-            active_inst_idx = torch.LongTensor(active_inst_idx).to(self.device)
+        scores = torch.log(best_k_probs).view(beam_size)
+        gen_seq = self.blank_seqs.clone().detach()
+        gen_seq[:, 1] = best_k_idx[0]
+        enc_output = enc_output.repeat(beam_size, 1, 1)
+        return enc_output, gen_seq, scores
 
-            active_src_seq = collect_active_part(src_seq, active_inst_idx, n_prev_active_inst, n_bm)
-            active_src_enc = collect_active_part(src_enc, active_inst_idx, n_prev_active_inst, n_bm)
-            active_inst_idx_to_position_map = get_inst_idx_to_tensor_position_map(active_inst_idx_list)
 
-            return active_src_seq, active_src_enc, active_inst_idx_to_position_map
+    def _get_the_best_score_and_idx(self, gen_seq, dec_output, scores, step):
+        assert len(scores.size()) == 1
 
-        def beam_decode_step(inst_dec_beams, len_dec_seq, src_seq, enc_output, inst_idx_to_position_map, n_bm):
-            ''' Decode and update beam status, and then return active beam idx '''
+        beam_size = self.beam_size
 
-            def prepare_beam_dec_seq(inst_dec_beams, len_dec_seq,f_s):
-                dec_partial_seq = []
-                i=0
-                for b in inst_dec_beams:
-                    if not b.done:
-                        dec_partial_seq.append(b.get_current_state(f_s[i][-1]))
-                    i+=1
-                dec_partial_seq = torch.stack(dec_partial_seq).to(self.device)
-                dec_partial_seq = dec_partial_seq.view(-1, len_dec_seq)
-                return dec_partial_seq
+        # Get k candidates for each beam, k^2 candidates in total.
+        best_k2_probs, best_k2_idx = dec_output[:, -1, :].topk(beam_size)
 
-            def prepare_beam_dec_pos(len_dec_seq, n_active_inst, n_bm):
-                dec_partial_pos = torch.arange(1, len_dec_seq + 1, dtype=torch.long, device=self.device)
-                dec_partial_pos = dec_partial_pos.unsqueeze(0).repeat(n_active_inst * n_bm, 1)
-                return dec_partial_pos
+        # Include the previous scores.
+        scores = torch.log(best_k2_probs).view(beam_size, -1) + scores.view(beam_size, 1)
 
-            def predict_word(dec_seq, dec_pos, src_seq, enc_output, n_active_inst, n_bm):
-                dec_output, *_ = self.model.decoder(dec_seq, dec_pos, src_seq, enc_output)
-                dec_output_s = dec_output[:, -1, :]  # Pick the last step: (bh * bm) * d_h
-                word_prob = F.log_softmax(self.model.tgt_word_prj(dec_output_s), dim=1)
-                word_prob = word_prob.view(n_active_inst, n_bm, -1)
-                seq_logit = self.model.tgt_word_prj(dec_output) * self.model.x_logit_scale
-                s =  seq_logit.view(-1, seq_logit.size(2))
-                return word_prob
+        # Get the best k candidates from k^2 candidates.
+        scores, best_k_idx_in_k2 = scores.view(-1).topk(beam_size)
 
-            def collect_active_inst_idx_list(inst_beams, word_prob, inst_idx_to_position_map):
-                active_inst_idx_list = []
-                for inst_idx, inst_position in inst_idx_to_position_map.items():
-                    is_inst_complete = inst_beams[inst_idx].advance(word_prob[inst_position])
-                    if not is_inst_complete:
-                        active_inst_idx_list += [inst_idx]
+        # Get the corresponding positions of the best k candidiates.
+        best_k_r_idxs, best_k_c_idxs = best_k_idx_in_k2 // beam_size, best_k_idx_in_k2 % beam_size
+        best_k_idx = best_k2_idx[best_k_r_idxs, best_k_c_idxs]
 
-                return active_inst_idx_list
+        # Copy the corresponding previous tokens.
+        gen_seq[:, :step] = gen_seq[best_k_r_idxs, :step]
+        # Set the best tokens in this beam search step
+        gen_seq[:, step] = best_k_idx
 
-            n_active_inst = len(inst_idx_to_position_map)
+        return gen_seq, scores
 
-            dec_seq = prepare_beam_dec_seq(inst_dec_beams, len_dec_seq,src_seq)
-            dec_pos = prepare_beam_dec_pos(len_dec_seq, n_active_inst, n_bm)
-            word_prob = predict_word(dec_seq, dec_pos, src_seq, enc_output, n_active_inst, n_bm)
 
-            # Update the beam with predicted word prob information and collect incomplete instances
-            active_inst_idx_list = collect_active_inst_idx_list(inst_dec_beams, word_prob, inst_idx_to_position_map)
+    def translate_sentence(self, src_seq):
+        # Only accept batch size equals to 1 in this function.
+        # TODO: expand to batch operation.
+        assert src_seq.size(0) == 1
 
-            return active_inst_idx_list
-
-        def collect_hypothesis_and_scores(inst_dec_beams, n_best):
-            all_hyp, all_scores = [], []
-            for inst_idx in range(len(inst_dec_beams)):
-                scores, tail_idxs = inst_dec_beams[inst_idx].sort_scores()
-                all_scores += [scores[:n_best]]
-                hyps = [inst_dec_beams[inst_idx].get_hypothesis(i) for i in tail_idxs[:n_best]]
-                all_hyp += [hyps]
-            return all_hyp, all_scores
+        src_pad_idx, trg_eos_idx = self.src_pad_idx, self.trg_eos_idx
+        max_seq_len, beam_size, alpha = self.max_seq_len, self.beam_size, self.alpha
 
         with torch.no_grad():
-            # -- Encode
-            src_seq, src_pos = src_seq.to(self.device), src_pos.to(self.device)
-            src_enc, *_ = self.model.encoder(src_seq, src_pos)
+            src_mask = get_pad_mask(src_seq, src_pad_idx)
+            enc_output, gen_seq, scores = self._get_init_state(src_seq, src_mask)
 
-            # -- Repeat data for beam search
-            n_bm = 5
-            n_inst, len_s, d_h = src_enc.size()
-            src_seq = src_seq.repeat(1, n_bm).view(n_inst * n_bm, len_s)
-            src_enc = src_enc.repeat(1, n_bm, 1).view(n_inst * n_bm, len_s, d_h)
-
-            # -- Prepare beams
-            inst_dec_beams = [Beam(n_bm, device=self.device) for _ in range(n_inst)]
-
-            # -- Bookkeeping for active or not
-            active_inst_idx_list = list(range(n_inst))
-            inst_idx_to_position_map = get_inst_idx_to_tensor_position_map(active_inst_idx_list)
-
-
-            # -- Decode
-            for len_dec_seq in range(1, 33):
-
-                active_inst_idx_list = beam_decode_step(inst_dec_beams, len_dec_seq, src_seq, src_enc, inst_idx_to_position_map, n_bm)
-
-                if not active_inst_idx_list:
-                    break  # all instances have finished their path to <EOS>
-
-                src_seq, src_enc, inst_idx_to_position_map = collate_active_info(src_seq, src_enc, inst_idx_to_position_map, active_inst_idx_list)
-
-        batch_hyp, batch_scores = collect_hypothesis_and_scores(inst_dec_beams, 1)
-
-        return batch_hyp, batch_scores
+            ans_idx = 0   # default
+            for step in range(2, max_seq_len):    # decode up to max length
+                dec_output = self._model_decode(gen_seq[:, :step], enc_output, src_mask)
+                gen_seq, scores = self._get_the_best_score_and_idx(gen_seq, dec_output, scores, step)
+                # Check if all path finished
+                # -- locate the eos in the generated sequences
+                eos_locs = gen_seq == trg_eos_idx
+                # -- replace the eos with its position for the length penalty use
+                seq_lens, _ = self.len_map.masked_fill(~eos_locs, max_seq_len).min(1)
+                # -- check if all beams contain eos
+                if (eos_locs.sum(1) > 0).sum(0).item() == beam_size:
+                    # TODO: Try different terminate conditions.
+                    _, ans_idx = scores.div(seq_lens.float() ** alpha).max(0)
+                    ans_idx = ans_idx.item()
+                    break
+        return gen_seq[ans_idx][:seq_lens[ans_idx]].tolist()

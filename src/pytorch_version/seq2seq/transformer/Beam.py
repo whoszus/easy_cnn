@@ -41,7 +41,7 @@ class Beam():
     def done(self):
         return self._done
 
-    def advance(self, word_prob):
+    def advance(self, word_prob,beam_last):
         "Update beam status and check if finished or not."
         num_words = word_prob.size(1)
 
@@ -54,11 +54,14 @@ class Beam():
         flat_beam_lk = beam_lk.view(-1)
         # flat_beam_lk = flat_beam_lk.masked_select(flat_beam_lk.ne(0))
         best_scores, best_scores_id = flat_beam_lk.topk(self.size, 0, True, True)
-        zero_size = best_scores.masked_select(best_scores.eq(0)).size()
-        if zero_size[0]>0:
+        last_best = beam_last[0]
+        if last_best == best_scores_id[0]:
+        # zero_size = best_scores.masked_select(best_scores.eq(0)).size()
+        # if zero_size[0]>0:
             best_scores, best_scores_id = flat_beam_lk.topk(self.size+1, 0, True, True)
-            best_scores = best_scores[best_scores!=0]
+            # best_scores = best_scores[best_scores!=0]
             best_scores_id = torch.cat([best_scores_id[0:0], best_scores_id[1:]])
+            best_scores = torch.cat([best_scores[0:0], best_scores[1:]])
         self.all_scores.append(self.scores)
         self.scores = best_scores
 

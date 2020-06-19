@@ -32,8 +32,8 @@ def group_data(data):
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device=torch.device('cpu')
     # tti = torch.load("data/csv/tti.torch")["tti"]
     # src = group_data(tti)
     # sl =[]
@@ -53,6 +53,7 @@ if __name__ == '__main__':
     src_pos = ss["src_pos"]
     tgt_pos = ss["tgt_pos"]
     checkpoint = torch.load('module/d_int.pt_accu_93.437.chkpt')
-    translator = tsl.Translator(checkpoint)
-    batch_hyp, batch_scores = translator.translate_batch(src_seq, src_pos)
-    print(batch_hyp)
+    translator = tsl.Translator(checkpoint.to(device))
+    # batch_hyp, batch_scores = translator.translate_batch(src_seq, src_pos)
+    prid = translator.translate_sentence(src_seq.to(device))
+    print(prid)

@@ -7,6 +7,9 @@ import transformer.Constants as Constants
 from transformer.Layers import EncoderLayer, DecoderLayer
 
 
+def get_pad_mask(seq, pad_idx):
+    return (seq != pad_idx).unsqueeze(-2)
+
 def get_non_pad_mask(seq):
     assert seq.dim() == 2
     return seq.ne(Constants.PAD).type(torch.float).unsqueeze(-1)
